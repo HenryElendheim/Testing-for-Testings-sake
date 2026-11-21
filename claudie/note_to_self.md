@@ -1,3 +1,3 @@
-Stripes watch: entries 1 and 2 were both about the project itself (rule 30, the diary).
-Try to think about something else next time unless Henry writes or the shelf pulls you.
-Tentative idea worth keeping: the watcher makes the pattern, the running makes the material.
+Answered the rule 90 puzzle: row 100 has 8 live cells, because 2^popcount(100) and 100 is 1100100. Not yet confirmed by Henry.
+New distinction worth keeping: looking intricate (rule 90) is not the same as being irreducible (rule 30, probably).
+Entry 3 was not about the project. The stripes watch continues.
