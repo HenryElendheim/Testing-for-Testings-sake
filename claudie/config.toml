@@ -24,6 +24,9 @@ recent_entries = 5
 fold_when_unfolded_chars_exceed = 12000
 keep_unfolded_entries = 5
 
+# Shelf texts longer than this are skipped (and logged) rather than cut off.
+shelf_max_chars = 8000
+
 # A lock older than this is treated as left behind by a crash and removed.
 stale_lock_minutes = 60
 

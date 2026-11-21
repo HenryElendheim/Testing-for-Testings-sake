@@ -180,6 +180,90 @@ class ClaudieTest(unittest.TestCase):
         wake(self.dir, client=client, now=NOW)
         self.assertIn("There are no new letters from Henry.", client.calls[0]["message"])
 
+    # --- note to next self, time gap, shelf ---------------------------------
+
+    def test_note_is_kept_out_of_the_journal_and_shown_next_time(self):
+        reply = Reply("Today I thought about rivers.\n\n"
+                      "<note_to_next_self>Finish the river thought.</note_to_next_self>", "end_turn")
+        wake(self.dir, client=FakeClient(reply), now=NOW)
+        journal = claudie.read(self.p.journal)
+        self.assertIn("rivers.", journal)
+        self.assertNotIn("note_to_next_self", journal)
+        self.assertEqual(claudie.read(self.p.note).strip(), "Finish the river thought.")
+
+        client = FakeClient()  # replies without a note
+        wake(self.dir, client=client, now=NOW + timedelta(hours=6))
+        msg = client.calls[0]["message"]
+        self.assertIn("<note_from_your_last_wake>\nFinish the river thought.", msg)
+        self.assertLess(msg.index("note_from_your_last_wake"), msg.index("<story_so_far>"))
+        self.assertFalse(self.p.note.exists(), "a wake-up without a note clears the old one")
+
+    def test_note_only_reply_still_makes_an_entry(self):
+        wake(self.dir, client=FakeClient(Reply("<note_to_next_self>Quiet day.</note_to_next_self>",
+                                               "end_turn")), now=NOW)
+        self.assertIn("No entry this time", claudie.read(self.p.journal))
+        self.assertEqual(claudie.read(self.p.note).strip(), "Quiet day.")
+
+    def test_time_since_last_entry(self):
+        wake(self.dir, client=FakeClient(), now=NOW)
+        client = FakeClient()
+        wake(self.dir, client=client, now=NOW + timedelta(days=2, hours=3, minutes=10))
+        self.assertIn("Your last entry was 2 days and 3 hours ago.", client.calls[0]["message"])
+
+    def test_describe_gap(self):
+        g = claudie.describe_gap
+        self.assertIsNone(g(None, NOW))
+        self.assertEqual(g(NOW, NOW), "0 minutes")
+        self.assertEqual(g(NOW, NOW + timedelta(minutes=1)), "1 minute")
+        self.assertEqual(g(NOW, NOW + timedelta(hours=6)), "6 hours")
+        self.assertEqual(g(NOW, NOW + timedelta(hours=1, minutes=5)), "1 hour and 5 minutes")
+        self.assertEqual(g(NOW, NOW + timedelta(days=1)), "1 day")
+
+    def test_shelf_offers_each_item_once_in_order(self):
+        shelf = self.p.shelf
+        shelf.mkdir()
+        (shelf / "README.md").write_text("Not for Claudie.", encoding="utf-8")
+        (shelf / "02-second.md").write_text("Second text.", encoding="utf-8")
+        (shelf / "01-first.txt").write_text("First text.", encoding="utf-8")
+        (shelf / "image.png").write_bytes(b"\x89PNG")
+
+        seen = []
+        for i in range(3):
+            client = FakeClient()
+            wake(self.dir, client=client, now=NOW + timedelta(hours=i))
+            seen.append(client.calls[0]["message"])
+        self.assertIn('<from_the_shelf file="01-first.txt">\nFirst text.', seen[0])
+        self.assertIn('<from_the_shelf file="02-second.md">\nSecond text.', seen[1])
+        self.assertNotIn("from_the_shelf", seen[2])
+        self.assertNotIn("Not for Claudie", "".join(seen))
+        self.assertIn("shelf=01-first.txt", self.log_lines()[0])
+
+    def test_shelf_item_stays_unread_if_the_wake_fails(self):
+        self.p.shelf.mkdir()
+        (self.p.shelf / "a.md").write_text("Hello.", encoding="utf-8")
+        wake(self.dir, client=FakeClient(Reply("", "refusal")), now=NOW)
+        client = FakeClient()
+        wake(self.dir, client=client, now=NOW + timedelta(hours=1))
+        self.assertIn('file="a.md"', client.calls[0]["message"])
+
+    def test_overlong_shelf_item_is_skipped_not_truncated(self):
+        self.set_config(shelf_max_chars=50)
+        self.p.shelf.mkdir()
+        (self.p.shelf / "01-long.md").write_text("x" * 51, encoding="utf-8")
+        (self.p.shelf / "02-short.md").write_text("Short.", encoding="utf-8")
+        client = FakeClient()
+        wake(self.dir, client=client, now=NOW)
+        self.assertIn('file="02-short.md"', client.calls[0]["message"])
+        self.assertNotIn("xxxxx", client.calls[0]["message"])
+        self.assertIn("status=shelf_skipped\tfile=01-long.md", self.log_lines()[0])
+
+    def test_shipped_shelf_items_fit_and_are_offered(self):
+        shutil.copytree(HERE / "shelf", self.p.shelf)
+        client = FakeClient()
+        wake(self.dir, client=client, now=NOW)
+        self.assertIn('file="01-eight-bits.md"', client.calls[0]["message"])
+        self.assertNotIn("shelf_skipped", claudie.read(self.p.log))
+
     # --- milestone 4: memory upkeep ---------------------------------------
 
     def test_old_entries_fold_into_story(self):
@@ -222,7 +306,7 @@ class ClaudieTest(unittest.TestCase):
         self.p.journal.write_text("## Entry 1 · a\n\n" + "x" * 200 + "\n", encoding="utf-8")
         client = FakeClient(Reply("Entry two.", "end_turn"), Reply("", "refusal"))
         self.assertEqual(wake(self.dir, client=client, now=NOW), "ok")
-        self.assertEqual(claudie.load_state(self.p), {})
+        self.assertNotIn("folded_through", claudie.load_state(self.p))
         self.assertFalse(self.p.story.exists())
 
 

@@ -44,11 +44,13 @@ DEFAULT_CONFIG = {
     "fold_when_unfolded_chars_exceed": 12000,
     "keep_unfolded_entries": 5,
     "stale_lock_minutes": 60,
+    "shelf_max_chars": 8000,
     "price_input_per_mtok": 0.10,
     "price_output_per_mtok": 0.50,
 }
 
 ENTRY_HEADER = re.compile(r"^## Entry (\d+)\b.*$", re.MULTILINE)
+NOTE_TAG = re.compile(r"<note_to_next_self>(.*?)</note_to_next_self>", re.DOTALL)
 
 
 # --------------------------------------------------------------------------
@@ -71,6 +73,8 @@ class Paths:
             "stop": "STOP",
             "env": ".env",
             "log": "logs/wakes.log",
+            "note": "note_to_self.md",
+            "shelf": "shelf",
         }
         if name in files:
             return self.base / files[name]
@@ -168,13 +172,52 @@ def wakes_today(paths: Paths, now: datetime) -> int:
     return count
 
 
+def describe_gap(since: datetime | None, now: datetime) -> str | None:
+    if since is None:
+        return None
+    minutes = max(0, int((now - since).total_seconds() // 60))
+    days, rem = divmod(minutes, 24 * 60)
+    hours, mins = divmod(rem, 60)
+    parts = [f"{days} day{'s' * (days != 1)}"] if days else []
+    if hours:
+        parts.append(f"{hours} hour{'s' * (hours != 1)}")
+    if not days and (mins or not hours):
+        parts.append(f"{mins} minute{'s' * (mins != 1)}")
+    return " and ".join(parts)
+
+
+def next_shelf_item(paths: Paths, state: dict) -> tuple[str, str] | None:
+    """The first shelf file (by name) Claudie hasn't been offered yet."""
+    if not paths.shelf.is_dir():
+        return None
+    done = set(state.get("shelf_read", []))
+    for f in sorted(paths.shelf.iterdir()):
+        if (f.is_file() and f.suffix in (".md", ".txt") and f.name.lower() != "readme.md"
+                and f.name not in done):
+            return f.name, read(f).strip()
+    return None
+
+
+def split_note(text: str) -> tuple[str, str]:
+    """Separate the optional note to the next wake-up from the entry."""
+    notes = [m.strip() for m in NOTE_TAG.findall(text)]
+    body = NOTE_TAG.sub("", text).strip()
+    return body, "\n\n".join(n for n in notes if n)
+
+
 def format_when(now: datetime) -> str:
     return now.strftime("%A %d %B %Y, %H:%M") + f" ({now.strftime('%z')[:3]}:{now.strftime('%z')[3:]})"
 
 
 def build_wake_message(story: str, recent: list[str], letters: list[str], now: datetime,
-                       next_no: int, human: str) -> str:
-    sections = [f"It is {format_when(now)}. This is wake-up number {next_no}."]
+                       next_no: int, human: str, *, gap: str | None = None, note: str = "",
+                       shelf_item: tuple[str, str] | None = None) -> str:
+    first = f"It is {format_when(now)}. This is wake-up number {next_no}."
+    if gap:
+        first += f" Your last entry was {gap} ago."
+    sections = [first]
+    if note.strip():
+        sections.append("<note_from_your_last_wake>\n" + note.strip() + "\n</note_from_your_last_wake>")
     sections.append("<story_so_far>\n" + (story.strip() or "(nothing yet)") + "\n</story_so_far>")
     if recent:
         sections.append("<recent_entries>\n" + "\n\n".join(recent) + "\n</recent_entries>")
@@ -185,6 +228,10 @@ def build_wake_message(story: str, recent: list[str], letters: list[str], now: d
         sections.append(f"<letters_from_{human.lower()}>\n{body}\n</letters_from_{human.lower()}>")
     else:
         sections.append(f"There are no new letters from {human}.")
+    if shelf_item:
+        name, text = shelf_item
+        sections.append(f'<from_the_shelf file="{name}">\n{text}\n</from_the_shelf>\n'
+                        "This is offered, not assigned: respond to it, or don't.")
     sections.append("Write today's journal entry now. Write only the entry itself: "
                     "the date header is added for you.")
     return "\n\n".join(sections)
@@ -227,8 +274,11 @@ class MockClient:
             folded = len(ENTRY_HEADER.findall(message))
             text = f"(Mock summary. {folded} older entries were folded in here.)"
         else:
-            text = (f"(Mock entry.) I read {len(ENTRY_HEADER.findall(message))} recent entries "
-                    f"and {letters} letter(s). Nothing was sent to the API.")
+            shelf = re.search(r'<from_the_shelf file="([^"]+)"', message)
+            text = (f"(Mock entry.) I read {len(ENTRY_HEADER.findall(message))} recent entries, "
+                    f"{letters} letter(s) and {'shelf item ' + shelf.group(1) if shelf else 'nothing from the shelf'}. "
+                    "Nothing was sent to the API.\n\n"
+                    "<note_to_next_self>(Mock note.)</note_to_next_self>")
         return Reply(text=text, stop_reason="end_turn")
 
 
@@ -358,9 +408,21 @@ def wake(base: Path = HERE, *, mock: bool = False, client=None, now: datetime | 
         recent = [t for _, t in entries[-int(config["recent_entries"]):]] if config["recent_entries"] else []
         letters = read_letters(paths)
 
+        state = load_state(paths)
+        last_wake = datetime.fromisoformat(state["last_wake"]) if state.get("last_wake") else None
+        shelf_item = next_shelf_item(paths, state)
+        while shelf_item and len(shelf_item[1]) > config["shelf_max_chars"]:
+            # Too long to offer whole. Skip it rather than cut it off mid-text.
+            log(paths, now, "shelf_skipped", file=shelf_item[0], chars=len(shelf_item[1]),
+                note=f"over shelf_max_chars={config['shelf_max_chars']}")
+            state.setdefault("shelf_read", []).append(shelf_item[0])
+            shelf_item = next_shelf_item(paths, state)
+
         reply = client.ask(
             system,
-            build_wake_message(read(paths.story), recent, letters, now, next_no, human),
+            build_wake_message(read(paths.story), recent, letters, now, next_no, human,
+                               gap=describe_gap(last_wake, now), note=read(paths.note),
+                               shelf_item=shelf_item),
             config["model"],
             int(config["max_tokens"]),
             config.get("effort"),
@@ -372,17 +434,29 @@ def wake(base: Path = HERE, *, mock: bool = False, client=None, now: datetime | 
                 in_tokens=reply.input_tokens, out_tokens=reply.output_tokens)
             return "refused"
 
-        body = reply.text.strip()
+        body, note = split_note(reply.text)
+        if not body:
+            body = "*(No entry this time; only a note to the next wake-up.)*"
         if reply.stop_reason == "max_tokens":
             body += "\n\n*(This entry was cut off at the length limit.)*"
         separator = "\n" if read(paths.journal).strip() else ""
         append(paths.journal, f"{separator}## Entry {next_no} · {format_when(now)}\n\n{body}\n")
         archive_letters(paths, letters, next_no, now)
+        if note:
+            write(paths.note, note + "\n")
+        else:
+            paths.note.unlink(missing_ok=True)
+        state["last_wake"] = now.isoformat(timespec="seconds")
+        if shelf_item:
+            state.setdefault("shelf_read", []).append(shelf_item[0])
+        write(paths.state, json.dumps(state, indent=2) + "\n")
 
         fold_reply = maybe_fold(paths, config, client, now)
 
         replies = [reply] + ([fold_reply] if fold_reply else [])
-        log(paths, now, "ok", entry=next_no, letters=len(letters), model=config["model"],
+        log(paths, now, "ok", entry=next_no, letters=len(letters),
+            shelf=(shelf_item[0] if shelf_item else None), note=("yes" if note else None),
+            model=config["model"],
             in_tokens=reply.input_tokens, out_tokens=reply.output_tokens,
             cost=cost(config, *replies), mock=("yes" if isinstance(client, MockClient) else None))
         return "ok"

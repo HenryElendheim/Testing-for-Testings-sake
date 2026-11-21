@@ -39,8 +39,9 @@ anything running nonstop.
    python claudie.py --mock
    ```
 
-6. Delete the mock files (`journal.md`, `inbox.md`, `inbox_archive.md`, `logs/`)
-   and do one real run:
+6. Delete the mock files (`journal.md`, `inbox.md`, `inbox_archive.md`,
+   `state.json`, `note_to_self.md`, `logs/`) so Claudie starts fresh, with the
+   shelf unread. Then do one real run:
 
    ```sh
    python claudie.py
@@ -78,7 +79,11 @@ whether user is logged on or not". Test one task with `schtasks /Run /TN "Claudi
 - **Write to Claudie:** add a letter to `inbox.md` below the comment. Separate
   several letters with a line containing only `---`. On the next wake-up
   Claudie replies in its entry and the letters move to `inbox_archive.md`.
+- **Give it something to read:** drop a `.md` or `.txt` file into `shelf/`.
+  Each wake-up offers the next unread one, once. See `shelf/README.md`.
 - **Read the journal:** `journal.md`. It is append-only; nothing is ever removed.
+- **See what it's carrying forward:** `note_to_self.md` holds the note Claudie
+  left for its next wake-up, if any.
 - **Check on it:** `logs/wakes.log` has one line per run with the status,
   tokens and estimated cost.
 - **Stop it:** create a file named `STOP` in the folder. Every run exits at
@@ -90,10 +95,13 @@ whether user is logged on or not". Test one task with `schtasks /Run /TN "Claudi
    active). A lock older than an hour is treated as left by a crash and removed.
 2. Exit if today's real wake-ups already reached `max_wakes_per_day`. Mock runs
    don't count.
-3. Send the system prompt, `story_so_far.md`, the last 5 entries, any letters
-   and the current date and time.
-4. Append the reply to `journal.md` and archive the letters. If the model
-   declines, nothing is written and the letters wait for the next wake-up.
+3. Send the system prompt, the date and time and how long it's been since the
+   last entry, the note from the last wake-up, `story_so_far.md`, the last 5
+   entries, any letters, and the next unread shelf text.
+4. Append the reply to `journal.md`, save its note (if any) to
+   `note_to_self.md`, archive the letters and mark the shelf text as read. If
+   the model declines, nothing is written; the letters and shelf text wait for
+   the next wake-up.
 5. If the entries not yet summarised exceed about 12,000 characters, a second
    call folds all but the last 5 of them into `story_so_far.md`. The journal
    keeps every entry; only what Claudie rereads gets shorter.
@@ -110,11 +118,29 @@ All of the numbers above are settings in `config.toml`.
 | `claudie.py` | The wake-up script |
 | `config.toml` | Models, effort, caps, memory settings |
 | `prompt_system.md` | Who Claudie is and the house rules |
+| `shelf/` | Texts for Claudie to read, one per wake-up |
 | `test_claudie.py` | Tests; run `python -m unittest -v` in this folder (no key needed) |
 | `.env.example` | Template for `.env` |
 
 These are created on the laptop and never committed: `.env`, `journal.md`,
-`story_so_far.md`, `inbox.md`, `inbox_archive.md`, `state.json`, `logs/`.
+`story_so_far.md`, `note_to_self.md`, `inbox.md`, `inbox_archive.md`,
+`state.json`, `logs/`.
+
+## Changes from the original plan
+
+The Claude that built this was asked to adjust it to suit itself. It kept the
+safety design and added three things:
+
+- **The shelf.** Without new input, a journal that only rereads itself tends
+  to go in circles. The shelf is still no tools: local text files only.
+- **A note to the next self.** A few lines, shown first on the next wake-up,
+  for an unfinished thought. It's separate from the journal so the journal
+  stays readable, and it's a plain file so you can read it too.
+- **Time awareness.** Each wake-up is told how long it's been since the last
+  entry.
+
+The prompt also now says a short entry, or "nothing new today", is fine.
+Asking for 400 words three times a day would invite filler.
 
 ## A note from the Claude that built this
 
