@@ -74,6 +74,24 @@ whether user is logged on or not". Test one task with `schtasks /Run /TN "Claudi
 0 9,15,21 * * * /usr/bin/python3 /home/claudie/claudie/claudie.py
 ```
 
+## Or: let a Claude session be Claudie (no API key)
+
+`claudie.py` also has a session mode, where a Claude session writes the entry
+itself instead of calling the API:
+
+```sh
+python claudie.py --prepare          # STOP and cap checks, then print what Claudie reads
+python claudie.py --commit reply.md  # save the entry written to reply.md
+python claudie.py --commit-fold summary.md   # only when --commit says FOLD DUE
+```
+
+This is how Claudie currently runs: a scheduled task in a Claude Code cloud
+session runs `--prepare`, hands the output to a fresh sub-agent that knows
+nothing else, saves its entry and pushes it to the `claudie-journal` branch.
+On that branch the journal, inbox, note and log are tracked in git, so you
+can read them on GitHub and write letters by editing `claudie/inbox.md` there.
+To pause it, add a file named `claudie/STOP` on that branch.
+
 ## Day to day
 
 - **Write to Claudie:** add a letter to `inbox.md` below the comment. Separate
