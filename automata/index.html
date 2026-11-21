@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rule Explorer</title>
+  <style>
+    :root {
+      --bg: #f6f5f2;
+      --panel: #ffffff;
+      --text: #1d1c1a;
+      --muted: #6c6861;
+      --border: #e3e0d9;
+      --cell: #23324a;
+      --cell-bg: #fbfaf7;
+      --accent: #2f6fdb;
+      --accent-text: #ffffff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0f1013;
+        --panel: #17181c;
+        --text: #ecebe7;
+        --muted: #9b9a96;
+        --border: #2a2b30;
+        --cell: #8fd3ff;
+        --cell-bg: #111216;
+        --accent: #6aa8ff;
+        --accent-text: #0f1013;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0f1013;
+      --panel: #17181c;
+      --text: #ecebe7;
+      --muted: #9b9a96;
+      --border: #2a2b30;
+      --cell: #8fd3ff;
+      --cell-bg: #111216;
+      --accent: #6aa8ff;
+      --accent-text: #0f1013;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+    main {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    h1 { margin: 0; font-size: 22px; letter-spacing: -0.01em; }
+    .sub { margin: 4px 0 0; color: var(--muted); }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+
+    .rule-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+    }
+    .rule-num {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .rule-num label { color: var(--muted); }
+    .rule-num input {
+      width: 5.5ch;
+      font: 600 24px ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      color: var(--text);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 2px 6px;
+      text-align: center;
+    }
+
+    .table {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(0, 1fr));
+      gap: 6px;
+      flex: 1 1 360px;
+    }
+    .tile {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 2px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: transparent;
+      cursor: pointer;
+      color: inherit;
+    }
+    .tile:hover { border-color: var(--accent); }
+    .tile .top, .tile .bottom { display: flex; gap: 2px; }
+    .tile i {
+      width: clamp(7px, 1.6vw, 12px);
+      height: clamp(7px, 1.6vw, 12px);
+      border: 1px solid var(--border);
+      background: var(--cell-bg);
+    }
+    .tile i.on { background: var(--cell); border-color: var(--cell); }
+
+    .note { margin: 12px 0 0; color: var(--muted); min-height: 1.45em; }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      align-items: center;
+    }
+    .group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .group > span { color: var(--muted); margin-right: 2px; }
+    button.chip, .seg button {
+      font: inherit;
+      color: var(--text);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 4px 12px;
+      cursor: pointer;
+    }
+    button.chip:hover, .seg button:hover { border-color: var(--accent); }
+    button.chip[aria-pressed="true"], .seg button[aria-pressed="true"] {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-text);
+    }
+    input[type="range"] { accent-color: var(--accent); width: 110px; }
+    label.check { display: flex; gap: 6px; align-items: center; color: var(--muted); }
+    input[type="checkbox"] { accent-color: var(--accent); }
+
+    .canvas-wrap {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--cell-bg);
+    }
+    canvas { display: block; width: 100%; image-rendering: pixelated; }
+
+    .hint { color: var(--muted); font-size: 13px; margin: 0; }
+    kbd {
+      font: 12px ui-monospace, Menlo, Consolas, monospace;
+      border: 1px solid var(--border);
+      border-bottom-width: 2px;
+      border-radius: 4px;
+      padding: 0 4px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Rule Explorer</h1>
+      <p class="sub">Each row is computed from the one above it. A cell's next state depends only on itself and its two neighbours, and the 8 tiles below are the whole rule.</p>
+    </header>
+
+    <section class="panel">
+      <div class="rule-row">
+        <div class="rule-num">
+          <label for="rule">Rule</label>
+          <input id="rule" type="number" min="0" max="255" value="30" inputmode="numeric">
+        </div>
+        <div class="table" id="table" aria-label="Rule table: click a tile to flip its output"></div>
+      </div>
+      <p class="note" id="note"></p>
+    </section>
+
+    <section class="panel controls">
+      <div class="group" id="presets"><span>Try</span></div>
+      <div class="group">
+        <span>Start</span>
+        <div class="seg group" id="start">
+          <button type="button" data-start="single" aria-pressed="true">One cell</button>
+          <button type="button" data-start="random" aria-pressed="false">Random</button>
+        </div>
+        <button type="button" class="chip" id="reroll" title="New random row (R)">Reroll</button>
+      </div>
+      <div class="group">
+        <span>Zoom</span>
+        <input type="range" id="zoom" min="1" max="8" value="3" aria-label="Cell size">
+      </div>
+      <label class="check"><input type="checkbox" id="wrap" checked> Wrap edges</label>
+      <button type="button" class="chip" id="randomRule" title="Random rule (Space)">Random rule</button>
+      <button type="button" class="chip" id="theme">Theme</button>
+    </section>
+
+    <div class="canvas-wrap"><canvas id="canvas" aria-label="Cellular automaton pattern"></canvas></div>
+    <p class="hint"><kbd>←</kbd> <kbd>→</kbd> step through rules · <kbd>Space</kbd> random rule · <kbd>R</kbd> reroll the random start</p>
+  </main>
+
+  <script src="rules.js"></script>
+  <script>
+    (function () {
+      const A = window.Automata;
+      const $ = (id) => document.getElementById(id);
+      const canvas = $('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const state = { rule: 30, start: 'single', seed: 1, zoom: 3, wrap: true };
+
+      // Restore from the URL hash, e.g. #rule=110&start=random&seed=5
+      try {
+        const p = new URLSearchParams(location.hash.slice(1));
+        if (p.has('rule')) state.rule = clampRule(Number(p.get('rule')));
+        if (p.get('start') === 'random') state.start = 'random';
+        if (p.has('seed')) state.seed = Number(p.get('seed')) >>> 0 || 1;
+        if (p.has('zoom')) state.zoom = Math.min(8, Math.max(1, Number(p.get('zoom')) || 3));
+        if (p.get('wrap') === '0') state.wrap = false;
+      } catch (e) {}
+
+      function clampRule(n) {
+        n = Math.round(Number(n));
+        return Number.isFinite(n) ? ((n % 256) + 256) % 256 : 30;
+      }
+
+      // Rule table tiles.
+      const tableEl = $('table');
+      const tiles = A.ruleTable(0).map((entry, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'tile';
+        const top = document.createElement('span');
+        top.className = 'top';
+        entry.pattern.forEach((b) => {
+          const i = document.createElement('i');
+          if (b) i.className = 'on';
+          top.appendChild(i);
+        });
+        const bottom = document.createElement('span');
+        bottom.className = 'bottom';
+        const out = document.createElement('i');
+        bottom.appendChild(out);
+        btn.append(top, bottom);
+        const bit = 7 - idx;
+        btn.addEventListener('click', () => setRule(state.rule ^ (1 << bit)));
+        tableEl.appendChild(btn);
+        return { btn, out, pattern: entry.pattern.join('') };
+      });
+
+      // Presets.
+      const presetsEl = $('presets');
+      const presetButtons = A.PRESETS.map((p) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'chip';
+        b.textContent = p.rule;
+        b.addEventListener('click', () => setRule(p.rule));
+        presetsEl.appendChild(b);
+        return { b, rule: p.rule };
+      });
+
+      // Controls.
+      const ruleInput = $('rule');
+      ruleInput.addEventListener('input', () => {
+        if (ruleInput.value === '') return;
+        setRule(clampRule(ruleInput.value), false);
+      });
+      ruleInput.addEventListener('blur', () => { ruleInput.value = state.rule; });
+
+      document.querySelectorAll('#start button').forEach((b) => {
+        b.addEventListener('click', () => { state.start = b.dataset.start; update(); });
+      });
+      $('reroll').addEventListener('click', reroll);
+      $('zoom').addEventListener('input', (e) => { state.zoom = Number(e.target.value); update(); });
+      $('wrap').addEventListener('change', (e) => { state.wrap = e.target.checked; update(); });
+      $('randomRule').addEventListener('click', () => setRule(Math.floor(Math.random() * 256)));
+
+      function reroll() {
+        state.start = 'random';
+        state.seed = (Math.random() * 2 ** 32) >>> 0 || 1;
+        update();
+      }
+
+      // Theme toggle (remembered per browser).
+      const store = {
+        get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+        set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+      };
+      const savedTheme = store.get('theme');
+      if (savedTheme) document.documentElement.dataset.theme = savedTheme;
+      $('theme').addEventListener('click', () => {
+        const cur = document.documentElement.dataset.theme
+          || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        const next = cur === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        store.set('theme', next);
+        update();
+      });
+      matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => update());
+
+      // Keyboard shortcuts (ignored while typing in the rule box).
+      document.addEventListener('keydown', (e) => {
+        if (e.target === ruleInput || e.metaKey || e.ctrlKey || e.altKey) return;
+        if (e.key === 'ArrowRight') { setRule(state.rule + 1); e.preventDefault(); }
+        else if (e.key === 'ArrowLeft') { setRule(state.rule - 1); e.preventDefault(); }
+        else if (e.key === ' ' && e.target.tagName !== 'BUTTON') {
+          setRule(Math.floor(Math.random() * 256)); e.preventDefault();
+        }
+        else if (e.key === 'r' || e.key === 'R') reroll();
+      });
+
+      function setRule(rule, syncInput = true) {
+        state.rule = clampRule(rule);
+        if (syncInput) ruleInput.value = state.rule;
+        update();
+      }
+
+      // Drawing: compute at one pixel per cell, then scale up crisply.
+      const off = document.createElement('canvas');
+      const offCtx = off.getContext('2d');
+
+      function hexToRgb(color) {
+        const probe = document.createElement('canvas').getContext('2d');
+        probe.fillStyle = color;
+        const hex = probe.fillStyle; // normalised to #rrggbb
+        return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+      }
+
+      function draw() {
+        const css = getComputedStyle(document.documentElement);
+        const on = hexToRgb(css.getPropertyValue('--cell').trim());
+        const offc = hexToRgb(css.getPropertyValue('--cell-bg').trim());
+
+        const cssWidth = canvas.parentElement.clientWidth;
+        const cssHeight = Math.max(240, Math.min(window.innerHeight * 0.75, 900));
+        const cellPx = state.zoom;
+        const cols = Math.max(8, Math.floor(cssWidth / cellPx));
+        const rows = Math.max(8, Math.floor(cssHeight / cellPx));
+
+        const first = state.start === 'single'
+          ? A.singleCell(cols)
+          : A.randomRow(cols, 0.5, A.seededRandom(state.seed));
+        const grid = A.run(first, state.rule, rows, state.wrap);
+
+        off.width = cols;
+        off.height = rows;
+        const img = offCtx.createImageData(cols, rows);
+        let k = 0;
+        for (let y = 0; y < rows; y++) {
+          const row = grid[y];
+          for (let x = 0; x < cols; x++) {
+            const c = row[x] ? on : offc;
+            img.data[k++] = c[0]; img.data[k++] = c[1]; img.data[k++] = c[2]; img.data[k++] = 255;
+          }
+        }
+        offCtx.putImageData(img, 0, 0);
+
+        const dpr = window.devicePixelRatio || 1;
+        canvas.style.height = rows * cellPx + 'px';
+        canvas.width = Math.round(cols * cellPx * dpr);
+        canvas.height = Math.round(rows * cellPx * dpr);
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(off, 0, 0, canvas.width, canvas.height);
+      }
+
+      function update() {
+        A.ruleTable(state.rule).forEach((entry, i) => {
+          tiles[i].out.classList.toggle('on', entry.out === 1);
+          tiles[i].btn.setAttribute('aria-label',
+            `Neighbourhood ${tiles[i].pattern} becomes ${entry.out}. Click to flip.`);
+        });
+        presetButtons.forEach(({ b, rule }) => b.setAttribute('aria-pressed', String(rule === state.rule)));
+        document.querySelectorAll('#start button').forEach((b) => {
+          b.setAttribute('aria-pressed', String(b.dataset.start === state.start));
+        });
+        $('zoom').value = state.zoom;
+        $('wrap').checked = state.wrap;
+
+        const preset = A.PRESETS.find((p) => p.rule === state.rule);
+        const bits = state.rule.toString(2).padStart(8, '0');
+        $('note').textContent = preset
+          ? preset.note
+          : `Binary ${bits}: each bit is one tile's output, from 111 on the left to 000 on the right.`;
+
+        draw();
+
+        const hash = new URLSearchParams({ rule: state.rule, start: state.start });
+        if (state.start === 'random') hash.set('seed', state.seed);
+        if (state.zoom !== 3) hash.set('zoom', state.zoom);
+        if (!state.wrap) hash.set('wrap', '0');
+        try { history.replaceState(null, '', '#' + hash); } catch (e) {}
+      }
+
+      let resizeTimer;
+      window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(draw, 100);
+      });
+
+      ruleInput.value = state.rule;
+      update();
+    })();
+  </script>
+</body>
+</html>
