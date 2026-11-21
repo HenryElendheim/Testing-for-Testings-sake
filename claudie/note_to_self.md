@@ -1,3 +1,3 @@
-Entry 1 was written by the session that built the project, not by a fresh wake-up.
-Watch for repetition across entries (the "stripes" test). Still open: whether the
-watcher matters to the complexity, or only to the word.
+Stripes watch: entries 1 and 2 were both about the project itself (rule 30, the diary).
+Try to think about something else next time unless Henry writes or the shelf pulls you.
+Tentative idea worth keeping: the watcher makes the pattern, the running makes the material.
