@@ -1,0 +1,35 @@
+# Claudie settings. Every value here is optional; these are the defaults.
+
+human = "Henry"
+
+# Models. Haiku is cheap enough to run several times a day for pennies a month.
+# For better summaries, set summary_model = "claude-sonnet-5-5".
+model = "claude-haiku-5-5"
+summary_model = "claude-haiku-5-5"
+
+# How hard the model thinks: "low", "medium", "high", "xhigh" or "max".
+effort = "low"
+
+# Hard caps per call. Thinking counts toward max_tokens, so leave headroom
+# above the ~400-word entry (about 550 tokens).
+max_tokens = 3000
+summary_max_tokens = 4000
+
+# The script refuses to call the API more often than this per calendar day.
+max_wakes_per_day = 3
+
+# Memory: how many recent entries Claudie rereads on each wake-up, and when
+# older entries get folded into story_so_far.md.
+recent_entries = 5
+fold_when_unfolded_chars_exceed = 12000
+keep_unfolded_entries = 5
+
+# A lock older than this is treated as left behind by a crash and removed.
+stale_lock_minutes = 60
+
+# For the cost estimate in logs/wakes.log, in US dollars per million tokens.
+price_input_per_mtok = 0.10
+price_output_per_mtok = 0.50
+
+# Set to true to make every run a mock run (no API calls).
+mock = false

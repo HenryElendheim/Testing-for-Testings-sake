@@ -5,7 +5,13 @@ Two small browser toys with no dependencies:
 - [Word clock](#word-clock): spells out the time in a grid of letters.
 - [Rule Explorer](#rule-explorer): all 256 elementary cellular automata.
 
-Run every test with `npm test` (Node 18 or newer).
+Run their tests with `npm test` (Node 18 or newer).
+
+And one Python project:
+
+- [Claudie](claudie/README.md): a journal-keeping Claude that wakes on a
+  schedule, reads its earlier entries and your letters, and writes a new
+  entry. Tests: `cd claudie && python -m unittest`.
 
 ## Word clock
 
