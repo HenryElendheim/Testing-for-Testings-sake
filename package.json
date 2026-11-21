@@ -1,0 +1,9 @@
+{
+  "name": "word-clock",
+  "version": "1.0.0",
+  "description": "A word clock that spells out the time in letters.",
+  "private": true,
+  "scripts": {
+    "test": "node --test"
+  }
+}

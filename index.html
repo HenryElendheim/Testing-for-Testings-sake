@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Word Clock</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --face: #fffdf8;
+      --dim: #d9d3c7;
+      --lit: #1f1d1a;
+      --glow: transparent;
+      --muted: #6f685d;
+      --border: #e4ded2;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #111214;
+        --face: #18191c;
+        --dim: #2c2e33;
+        --lit: #ffd27a;
+        --glow: rgba(255, 210, 122, 0.45);
+        --muted: #9a9ca3;
+        --border: #26282c;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #111214;
+      --face: #18191c;
+      --dim: #2c2e33;
+      --lit: #ffd27a;
+      --glow: rgba(255, 210, 122, 0.45);
+      --muted: #9a9ca3;
+      --border: #26282c;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      padding: 24px 16px;
+      background: var(--bg);
+      color: var(--lit);
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    .face {
+      position: relative;
+      width: min(92vw, 520px);
+      padding: clamp(28px, 7vw, 44px);
+      background: var(--face);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: clamp(2px, 0.8vw, 6px);
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      font-size: clamp(14px, 4.4vw, 26px);
+      font-weight: 600;
+      text-align: center;
+      user-select: none;
+    }
+    .grid span {
+      color: var(--dim);
+      transition: color 0.6s ease, text-shadow 0.6s ease;
+    }
+    .grid span.on {
+      color: var(--lit);
+      text-shadow: 0 0 12px var(--glow);
+    }
+
+    .dot {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--dim);
+      transition: background 0.6s ease, box-shadow 0.6s ease;
+    }
+    .dot.on { background: var(--lit); box-shadow: 0 0 10px var(--glow); }
+    .dot:nth-of-type(1) { top: 14px; left: 14px; }
+    .dot:nth-of-type(2) { top: 14px; right: 14px; }
+    .dot:nth-of-type(3) { bottom: 14px; right: 14px; }
+    .dot:nth-of-type(4) { bottom: 14px; left: 14px; }
+
+    .phrase {
+      margin: 0;
+      font-size: 18px;
+      color: var(--muted);
+      text-align: center;
+    }
+    .phrase strong { color: var(--lit); font-weight: 600; }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    select, button {
+      font: inherit;
+      color: var(--lit);
+      background: var(--face);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      max-width: 70vw;
+    }
+    button { cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="face" aria-hidden="true">
+    <i class="dot"></i><i class="dot"></i><i class="dot"></i><i class="dot"></i>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <p class="phrase" aria-live="polite">
+    <span id="phrase"></span><br>
+    <strong id="digital"></strong>
+  </p>
+
+  <div class="controls">
+    <label>Time zone
+      <select id="tz"></select>
+    </label>
+    <button id="theme" type="button">Toggle theme</button>
+  </div>
+
+  <script src="words.js"></script>
+  <script>
+    (function () {
+      const { GRID, timeToWords, litCells } = window.WordClock;
+      const gridEl = document.getElementById('grid');
+      const dots = document.querySelectorAll('.dot');
+      const phraseEl = document.getElementById('phrase');
+      const digitalEl = document.getElementById('digital');
+      const tzSelect = document.getElementById('tz');
+
+      // Build the letter grid once.
+      const cells = {};
+      GRID.forEach((row, r) => {
+        [...row].forEach((ch, c) => {
+          const span = document.createElement('span');
+          span.textContent = ch;
+          gridEl.appendChild(span);
+          cells[r + ',' + c] = span;
+        });
+      });
+
+      // Time zone picker, defaulting to the viewer's own zone.
+      const store = {
+        get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+        set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+      };
+      const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      let zones = [localTz, 'UTC'];
+      try { zones = zones.concat(Intl.supportedValuesOf('timeZone')); } catch (e) {}
+      [...new Set(zones)].forEach((z, i) => {
+        const opt = document.createElement('option');
+        opt.value = z;
+        opt.textContent = i === 0 ? z + ' (yours)' : z.replace(/_/g, ' ');
+        tzSelect.appendChild(opt);
+      });
+      tzSelect.value = store.get('tz') || localTz;
+      if (!tzSelect.value) tzSelect.value = localTz;
+      tzSelect.addEventListener('change', () => { store.set('tz', tzSelect.value); render(); });
+
+      // Theme toggle.
+      const savedTheme = store.get('theme');
+      if (savedTheme) document.documentElement.dataset.theme = savedTheme;
+      document.getElementById('theme').addEventListener('click', () => {
+        const isDark = document.documentElement.dataset.theme
+          ? document.documentElement.dataset.theme === 'dark'
+          : matchMedia('(prefers-color-scheme: dark)').matches;
+        const next = isDark ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        store.set('theme', next);
+      });
+
+      function nowIn(tz) {
+        const parts = new Intl.DateTimeFormat('en-GB', {
+          timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+        }).formatToParts(new Date());
+        const get = (t) => Number(parts.find((p) => p.type === t).value);
+        return { h: get('hour'), m: get('minute') };
+      }
+
+      function render() {
+        const { h, m } = nowIn(tzSelect.value);
+        const { keys, dots: extra, phrase } = timeToWords(h, m);
+        const lit = litCells(keys);
+        for (const [pos, span] of Object.entries(cells)) {
+          span.classList.toggle('on', lit.has(pos));
+        }
+        dots.forEach((d, i) => d.classList.toggle('on', i < extra));
+        phraseEl.textContent = phrase.charAt(0).toUpperCase() + phrase.slice(1) + '.';
+        digitalEl.textContent = String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+      }
+
+      render();
+      setInterval(render, 1000);
+    })();
+  </script>
+</body>
+</html>
