@@ -32,7 +32,7 @@ class FakeClient:
         return self.replies.pop(0) if len(self.replies) > 1 else self.replies[0]
 
 
-class ClaudieTest(unittest.TestCase):
+class Base(unittest.TestCase):
     def setUp(self):
         self.dir = Path(tempfile.mkdtemp())
         shutil.copy(HERE / "prompt_system.md", self.dir)
@@ -49,6 +49,9 @@ class ClaudieTest(unittest.TestCase):
         lines = [f"{k} = {v!r}".replace("'", '"') for k, v in values.items()]
         self.p.config.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
+
+
+class ClaudieTest(Base):
     # --- milestone 1 -------------------------------------------------------
 
     def test_first_wake_writes_entry_one_and_logs(self):
@@ -308,6 +311,73 @@ class ClaudieTest(unittest.TestCase):
         self.assertEqual(wake(self.dir, client=client, now=NOW), "ok")
         self.assertNotIn("folded_through", claudie.load_state(self.p))
         self.assertFalse(self.p.story.exists())
+
+
+class SessionModeTest(Base):
+    """A Claude session writes the entry itself: --prepare, then --commit."""
+
+    def reply_file(self, text):
+        f = self.dir / "reply.md"
+        f.write_text(text, encoding="utf-8")
+        return f
+
+    def test_prepare_then_commit(self):
+        self.p.inbox.write_text("Hi from Henry.\n", encoding="utf-8")
+        status, text = claudie.session_prepare(self.dir, now=NOW)
+        self.assertEqual(status, "ready")
+        self.assertIn("=== CLAUDIE'S SYSTEM PROMPT ===\nYou are Claudie", text)
+        self.assertIn("Hi from Henry.", text)
+        self.assertFalse(self.p.journal.exists(), "prepare writes no entry")
+
+        status, text = claudie.session_commit(
+            self.dir, self.reply_file("Hello Henry.\n<note_to_next_self>Ask about the laptop.</note_to_next_self>"))
+        self.assertEqual(status, "ok")
+        self.assertIn("## Entry 1 · Saturday 21 November 2026, 09:00 (+01:00)\n\nHello Henry.",
+                      claudie.read(self.p.journal))
+        self.assertEqual(claudie.read(self.p.note).strip(), "Ask about the laptop.")
+        self.assertEqual(claudie.read_letters(self.p), [])
+        self.assertIn("model=claude-session", self.log_lines()[-1])
+        self.assertFalse((self.dir / "pending.json").exists())
+
+    def test_commit_without_prepare_fails(self):
+        with self.assertRaises(RuntimeError):
+            claudie.session_commit(self.dir, self.reply_file("x"))
+
+    def test_session_mode_respects_stop_and_cap(self):
+        self.p.stop.touch()
+        self.assertEqual(claudie.session_prepare(self.dir, now=NOW)[0], "stopped")
+        self.p.stop.unlink()
+        self.set_config(max_wakes_per_day=1)
+        claudie.session_prepare(self.dir, now=NOW)
+        claudie.session_commit(self.dir, self.reply_file("One."))
+        self.assertEqual(claudie.session_prepare(self.dir, now=NOW + timedelta(hours=1))[0], "capped")
+
+    def test_letter_arriving_mid_wake_is_kept(self):
+        self.p.inbox.write_text("First letter.\n", encoding="utf-8")
+        claudie.session_prepare(self.dir, now=NOW)
+        claudie.append(self.p.inbox, "\n---\n\nLate letter.\n")
+        claudie.session_commit(self.dir, self.reply_file("Reply."))
+        self.assertEqual(claudie.read_letters(self.p), ["Late letter."])
+        self.assertNotIn("Late letter.", claudie.read(self.p.archive))
+
+    def test_fold_in_session_mode(self):
+        self.set_config(fold_when_unfolded_chars_exceed=500, keep_unfolded_entries=2)
+        for i in range(3):
+            self.assertEqual(claudie.session_prepare(self.dir, now=NOW + timedelta(hours=i))[0], "ready")
+            status, text = claudie.session_commit(self.dir, self.reply_file(f"Entry text {i} " + "y" * 200))
+        self.assertEqual(status, "fold_due")
+        self.assertIn("=== FOLD DUE", text)
+        self.assertIn("Entry text 0", text)
+        self.assertNotIn("Entry text 2", text)
+        status, _ = claudie.session_commit_fold(self.dir, self.reply_file("A summary."))
+        self.assertEqual(status, "ok")
+        self.assertEqual(claudie.read(self.p.story).strip(), "A summary.")
+        self.assertEqual(claudie.load_state(self.p)["folded_through"], 1)
+
+    def test_timezone_setting(self):
+        self.set_config(timezone="Europe/Oslo")
+        now = claudie.current_time(claudie.load_config(self.p))
+        self.assertIn(now.utcoffset(), (timedelta(hours=1), timedelta(hours=2)))
 
 
 class AnthropicClientTest(unittest.TestCase):

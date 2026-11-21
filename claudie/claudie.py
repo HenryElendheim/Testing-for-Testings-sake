@@ -146,12 +146,17 @@ def read_letters(paths: Paths) -> list[str]:
 
 
 def archive_letters(paths: Paths, letters: list[str], entry_no: int, now: datetime) -> None:
+    """Move answered letters to the archive. Letters that arrived since stay in the inbox."""
     if not letters:
         return
     block = f"\n## Answered in entry {entry_no} ({now:%Y-%m-%d %H:%M})\n\n"
     block += "\n\n---\n\n".join(letters) + "\n"
     append(paths.archive, block)
-    write(paths.inbox, INBOX_TEMPLATE)
+    remaining = list(read_letters(paths))
+    for letter in letters:
+        if letter in remaining:
+            remaining.remove(letter)
+    write(paths.inbox, INBOX_TEMPLATE + ("\n" + "\n\n---\n\n".join(remaining) + "\n" if remaining else ""))
 
 
 def load_state(paths: Paths) -> dict:
@@ -339,17 +344,30 @@ def acquire_lock(paths: Paths, stale_minutes: float) -> bool:
     return True
 
 
-def maybe_fold(paths: Paths, config: dict, client, now: datetime) -> Reply | None:
-    """Fold older unsummarised entries into story_so_far.md when they get long."""
-    state = load_state(paths)
-    folded_through = int(state.get("folded_through", 0))
+def entries_to_fold(paths: Paths, config: dict) -> list[tuple[int, str]]:
+    """Older unsummarised entries, once they get long enough to fold."""
+    folded_through = int(load_state(paths).get("folded_through", 0))
     unfolded = [(n, t) for n, t in split_entries(read(paths.journal)) if n > folded_through]
     keep = int(config["keep_unfolded_entries"])
     size = sum(len(t) for _, t in unfolded)
     if size <= config["fold_when_unfolded_chars_exceed"] or len(unfolded) <= keep:
-        return None
+        return []
+    return unfolded[:-keep] if keep else unfolded
 
-    to_fold = unfolded[:-keep] if keep else unfolded
+
+def save_fold(paths: Paths, now: datetime, through: int, count: int, summary: str, **log_fields) -> None:
+    write(paths.story, summary.strip() + "\n")
+    state = load_state(paths)
+    state["folded_through"] = through
+    write(paths.state, json.dumps(state, indent=2) + "\n")
+    log(paths, now, "folded", through_entry=through, entries=count, **log_fields)
+
+
+def maybe_fold(paths: Paths, config: dict, client, now: datetime) -> Reply | None:
+    """Fold older unsummarised entries into story_so_far.md when they get long."""
+    to_fold = entries_to_fold(paths, config)
+    if not to_fold:
+        return None
     reply = client.ask(
         FOLD_SYSTEM,
         build_fold_message(read(paths.story), [t for _, t in to_fold]),
@@ -361,19 +379,92 @@ def maybe_fold(paths: Paths, config: dict, client, now: datetime) -> Reply | Non
         log(paths, now, "fold_skipped", reason=reply.stop_reason,
             in_tokens=reply.input_tokens, out_tokens=reply.output_tokens)
         return reply
-    write(paths.story, reply.text.strip() + "\n")
-    state["folded_through"] = to_fold[-1][0]
-    write(paths.state, json.dumps(state, indent=2) + "\n")
-    log(paths, now, "folded", through_entry=to_fold[-1][0], entries=len(to_fold),
-        in_tokens=reply.input_tokens, out_tokens=reply.output_tokens, cost=cost(config, reply))
+    save_fold(paths, now, to_fold[-1][0], len(to_fold), reply.text,
+              in_tokens=reply.input_tokens, out_tokens=reply.output_tokens, cost=cost(config, reply))
     return reply
 
 
+def current_time(config: dict) -> datetime:
+    tz = config.get("timezone")
+    if tz:
+        from zoneinfo import ZoneInfo
+        return datetime.now(ZoneInfo(tz))
+    return datetime.now().astimezone()
+
+
+def gate(paths: Paths, config: dict, now: datetime) -> str | None:
+    """The checks every run passes first. Returns a status word if the run must stop."""
+    if paths.stop.exists():
+        log(paths, now, "stopped", note="STOP file present")
+        return "stopped"
+    if wakes_today(paths, now) >= config["max_wakes_per_day"]:
+        log(paths, now, "capped", note=f"max_wakes_per_day={config['max_wakes_per_day']}")
+        return "capped"
+    return None
+
+
+def prepare(paths: Paths, config: dict, now: datetime) -> dict:
+    """Gather everything Claudie reads on this wake-up."""
+    if not paths.inbox.exists():
+        write(paths.inbox, INBOX_TEMPLATE)
+    system = read(paths.system_prompt).strip()
+    if not system:
+        raise RuntimeError("prompt_system.md is missing or empty")
+
+    entries = split_entries(read(paths.journal))
+    next_no = (entries[-1][0] + 1) if entries else 1
+    recent = [t for _, t in entries[-int(config["recent_entries"]):]] if config["recent_entries"] else []
+    letters = read_letters(paths)
+
+    state = load_state(paths)
+    last_wake = datetime.fromisoformat(state["last_wake"]) if state.get("last_wake") else None
+    shelf_item = next_shelf_item(paths, state)
+    skipped = False
+    while shelf_item and len(shelf_item[1]) > config["shelf_max_chars"]:
+        # Too long to offer whole. Skip it rather than cut it off mid-text.
+        log(paths, now, "shelf_skipped", file=shelf_item[0], chars=len(shelf_item[1]),
+            note=f"over shelf_max_chars={config['shelf_max_chars']}")
+        state.setdefault("shelf_read", []).append(shelf_item[0])
+        skipped = True
+        shelf_item = next_shelf_item(paths, state)
+    if skipped:
+        write(paths.state, json.dumps(state, indent=2) + "\n")
+
+    message = build_wake_message(read(paths.story), recent, letters, now, next_no,
+                                 config.get("human", "Henry"), gap=describe_gap(last_wake, now),
+                                 note=read(paths.note), shelf_item=shelf_item)
+    return {"system": system, "message": message, "next_no": next_no, "letters": letters,
+            "shelf": shelf_item[0] if shelf_item else None}
+
+
+def save_entry(paths: Paths, now: datetime, ctx: dict, text: str, stop_reason: str = "end_turn") -> tuple[int, str]:
+    """Append the entry, keep the note, archive letters, mark the shelf item read."""
+    body, note = split_note(text)
+    if not body:
+        body = "*(No entry this time; only a note to the next wake-up.)*"
+    if stop_reason == "max_tokens":
+        body += "\n\n*(This entry was cut off at the length limit.)*"
+    next_no = ctx["next_no"]
+    separator = "\n" if read(paths.journal).strip() else ""
+    append(paths.journal, f"{separator}## Entry {next_no} · {format_when(now)}\n\n{body}\n")
+    archive_letters(paths, ctx["letters"], next_no, now)
+    if note:
+        write(paths.note, note + "\n")
+    else:
+        paths.note.unlink(missing_ok=True)
+    state = load_state(paths)
+    state["last_wake"] = now.isoformat(timespec="seconds")
+    if ctx["shelf"]:
+        state.setdefault("shelf_read", []).append(ctx["shelf"])
+    write(paths.state, json.dumps(state, indent=2) + "\n")
+    return next_no, note
+
+
 def wake(base: Path = HERE, *, mock: bool = False, client=None, now: datetime | None = None) -> str:
-    """Run one wake-up. Returns a short status word; every outcome is logged."""
+    """Run one wake-up through the API. Returns a short status word; every outcome is logged."""
     paths = Paths(base)
-    now = now or datetime.now().astimezone()
     config = load_config(paths)
+    now = now or current_time(config)
 
     if paths.stop.exists():
         log(paths, now, "stopped", note="STOP file present")
@@ -384,9 +475,9 @@ def wake(base: Path = HERE, *, mock: bool = False, client=None, now: datetime | 
         return "locked"
 
     try:
-        if wakes_today(paths, now) >= config["max_wakes_per_day"]:
-            log(paths, now, "capped", note=f"max_wakes_per_day={config['max_wakes_per_day']}")
-            return "capped"
+        stopped = gate(paths, config, now)
+        if stopped:
+            return stopped
 
         if client is None:
             if mock or config.get("mock"):
@@ -395,68 +486,22 @@ def wake(base: Path = HERE, *, mock: bool = False, client=None, now: datetime | 
                 load_env(paths)
                 client = AnthropicClient()
 
-        if not paths.inbox.exists():
-            write(paths.inbox, INBOX_TEMPLATE)
-
-        system = read(paths.system_prompt).strip()
-        if not system:
-            raise RuntimeError("prompt_system.md is missing or empty")
-        human = config.get("human", "Henry")
-
-        entries = split_entries(read(paths.journal))
-        next_no = (entries[-1][0] + 1) if entries else 1
-        recent = [t for _, t in entries[-int(config["recent_entries"]):]] if config["recent_entries"] else []
-        letters = read_letters(paths)
-
-        state = load_state(paths)
-        last_wake = datetime.fromisoformat(state["last_wake"]) if state.get("last_wake") else None
-        shelf_item = next_shelf_item(paths, state)
-        while shelf_item and len(shelf_item[1]) > config["shelf_max_chars"]:
-            # Too long to offer whole. Skip it rather than cut it off mid-text.
-            log(paths, now, "shelf_skipped", file=shelf_item[0], chars=len(shelf_item[1]),
-                note=f"over shelf_max_chars={config['shelf_max_chars']}")
-            state.setdefault("shelf_read", []).append(shelf_item[0])
-            shelf_item = next_shelf_item(paths, state)
-
-        reply = client.ask(
-            system,
-            build_wake_message(read(paths.story), recent, letters, now, next_no, human,
-                               gap=describe_gap(last_wake, now), note=read(paths.note),
-                               shelf_item=shelf_item),
-            config["model"],
-            int(config["max_tokens"]),
-            config.get("effort"),
-        )
+        ctx = prepare(paths, config, now)
+        reply = client.ask(ctx["system"], ctx["message"], config["model"],
+                           int(config["max_tokens"]), config.get("effort"))
 
         if reply.stop_reason == "refusal" or not reply.text:
-            # Nothing is written and the letters stay in the inbox for next time.
+            # Nothing is written; letters and the shelf item wait for next time.
             log(paths, now, "refused", stop_reason=reply.stop_reason,
                 in_tokens=reply.input_tokens, out_tokens=reply.output_tokens)
             return "refused"
 
-        body, note = split_note(reply.text)
-        if not body:
-            body = "*(No entry this time; only a note to the next wake-up.)*"
-        if reply.stop_reason == "max_tokens":
-            body += "\n\n*(This entry was cut off at the length limit.)*"
-        separator = "\n" if read(paths.journal).strip() else ""
-        append(paths.journal, f"{separator}## Entry {next_no} · {format_when(now)}\n\n{body}\n")
-        archive_letters(paths, letters, next_no, now)
-        if note:
-            write(paths.note, note + "\n")
-        else:
-            paths.note.unlink(missing_ok=True)
-        state["last_wake"] = now.isoformat(timespec="seconds")
-        if shelf_item:
-            state.setdefault("shelf_read", []).append(shelf_item[0])
-        write(paths.state, json.dumps(state, indent=2) + "\n")
-
+        entry_no, note = save_entry(paths, now, ctx, reply.text, reply.stop_reason)
         fold_reply = maybe_fold(paths, config, client, now)
 
         replies = [reply] + ([fold_reply] if fold_reply else [])
-        log(paths, now, "ok", entry=next_no, letters=len(letters),
-            shelf=(shelf_item[0] if shelf_item else None), note=("yes" if note else None),
-            model=config["model"],
+        log(paths, now, "ok", entry=entry_no, letters=len(ctx["letters"]), shelf=ctx["shelf"],
+            note=("yes" if note else None), model=config["model"],
             in_tokens=reply.input_tokens, out_tokens=reply.output_tokens,
             cost=cost(config, *replies), mock=("yes" if isinstance(client, MockClient) else None))
         return "ok"
@@ -467,10 +512,103 @@ def wake(base: Path = HERE, *, mock: bool = False, client=None, now: datetime | 
         paths.lock.unlink(missing_ok=True)
 
 
+# --------------------------------------------------------------------------
+# Session mode: a Claude session is Claudie, so no API call is needed.
+#   python claudie.py --prepare          print what Claudie reads this wake-up
+#   python claudie.py --commit FILE      save the entry written in FILE
+#   python claudie.py --commit-fold FILE save the summary written in FILE (only when asked)
+
+SESSION_MODEL = "claude-session"
+
+
+def session_prepare(base: Path = HERE, now: datetime | None = None) -> tuple[str, str]:
+    paths = Paths(base)
+    config = load_config(paths)
+    now = now or current_time(config)
+    stopped = gate(paths, config, now)
+    if stopped:
+        return stopped, ""
+    ctx = prepare(paths, config, now)
+    pending = {k: ctx[k] for k in ("next_no", "letters", "shelf")}
+    pending["now"] = now.isoformat()
+    write(paths.base / "pending.json", json.dumps(pending, indent=2) + "\n")
+    text = ("=== CLAUDIE'S SYSTEM PROMPT ===\n" + ctx["system"] +
+            "\n\n=== WHAT CLAUDIE READS THIS WAKE-UP ===\n" + ctx["message"] + "\n")
+    return "ready", text
+
+
+def session_commit(base: Path, reply_file: Path) -> tuple[str, str]:
+    paths = Paths(base)
+    config = load_config(paths)
+    pending_path = paths.base / "pending.json"
+    if not pending_path.exists():
+        raise RuntimeError("nothing to commit: run --prepare first")
+    pending = json.loads(read(pending_path))
+    now = datetime.fromisoformat(pending["now"])
+    text = read(reply_file).strip()
+    if not text:
+        raise RuntimeError(f"{reply_file} is empty")
+    entry_no, note = save_entry(paths, now, pending, text)
+    pending_path.unlink()
+    log(paths, now, "ok", entry=entry_no, letters=len(pending["letters"]), shelf=pending["shelf"],
+        note=("yes" if note else None), model=SESSION_MODEL)
+
+    to_fold = entries_to_fold(paths, config)
+    if not to_fold:
+        return "ok", f"Saved entry {entry_no}."
+    write(paths.base / "pending_fold.json",
+          json.dumps({"through": to_fold[-1][0], "count": len(to_fold), "now": pending["now"]}) + "\n")
+    task = ("=== FOLD DUE: SUMMARY INSTRUCTIONS ===\n" + FOLD_SYSTEM +
+            "\n\n=== MATERIAL ===\n" + build_fold_message(read(paths.story), [t for _, t in to_fold]) + "\n")
+    return "fold_due", f"Saved entry {entry_no}.\n\n{task}"
+
+
+def session_commit_fold(base: Path, summary_file: Path) -> tuple[str, str]:
+    paths = Paths(base)
+    pending_path = paths.base / "pending_fold.json"
+    if not pending_path.exists():
+        raise RuntimeError("no fold is pending")
+    pending = json.loads(read(pending_path))
+    summary = read(summary_file).strip()
+    if not summary:
+        raise RuntimeError(f"{summary_file} is empty")
+    save_fold(paths, datetime.fromisoformat(pending["now"]), pending["through"], pending["count"],
+              summary, model=SESSION_MODEL)
+    pending_path.unlink()
+    return "ok", f"Folded entries up to {pending['through']} into story_so_far.md."
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run one Claudie wake-up.")
-    parser.add_argument("--mock", action="store_true", help="use a fake reply; no API call")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--mock", action="store_true", help="use a fake reply; no API call")
+    group.add_argument("--prepare", action="store_true",
+                       help="session mode: print what Claudie reads this wake-up")
+    group.add_argument("--commit", metavar="FILE", type=Path,
+                       help="session mode: save the entry written in FILE")
+    group.add_argument("--commit-fold", metavar="FILE", type=Path,
+                       help="session mode: save the summary written in FILE")
     args = parser.parse_args(argv)
+
+    if args.prepare or args.commit or args.commit_fold:
+        try:
+            if args.prepare:
+                status, text = session_prepare()
+            elif args.commit:
+                status, text = session_commit(HERE, args.commit)
+            else:
+                status, text = session_commit_fold(HERE, args.commit_fold)
+        except Exception as e:
+            paths = Paths(HERE)
+            log(paths, current_time(load_config(paths)), "error",
+                error=f"{type(e).__name__}: {str(e)[:300]}".replace("\n", " "))
+            print(f"claudie: error: {e}")
+            return 1
+        if text:
+            print(text)
+        print(f"claudie: {status}")
+        return 0 if status in ("ready", "ok", "fold_due") else 2
+
     status = wake(mock=args.mock)
     print(f"claudie: {status} (details in logs/wakes.log)")
     return 0 if status in ("ok", "stopped", "locked", "capped") else 1

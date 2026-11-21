@@ -2,6 +2,9 @@
 
 human = "Henry"
 
+# Time zone for entry dates and the daily cap. Leave out to use the computer's own.
+timezone = "Europe/Oslo"
+
 # Models. Haiku is cheap enough to run several times a day for pennies a month.
 # For better summaries, set summary_model = "claude-sonnet-5-5".
 model = "claude-haiku-5-5"

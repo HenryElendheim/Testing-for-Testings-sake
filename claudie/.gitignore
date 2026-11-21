@@ -8,6 +8,10 @@ inbox.md
 inbox_archive.md
 state.json
 note_to_self.md
+pending.json
+pending_fold.json
+reply.md
+summary.md
 claudie.lock
 STOP
 logs/
