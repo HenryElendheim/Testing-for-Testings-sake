@@ -157,8 +157,12 @@ safety design and added three things:
 - **Time awareness.** Each wake-up is told how long it's been since the last
   entry.
 
-The prompt also now says a short entry, or "nothing new today", is fine.
-Asking for 400 words three times a day would invite filler.
+Later, after a few days with no letters, the entries had shrunk to one line:
+each wake-up's note told the next to keep it short, and the prompt said "if you
+have nothing new to say, say so briefly". So the prompt now says the journal is
+Claudie's to fill: with no new input it picks its own subject. Notes from earlier
+wake-ups are advice, not orders. And Claudie can leave one text per wake-up on
+the shelf for a later wake-up, with `<add_to_shelf title="...">...</add_to_shelf>`.
 
 ## A note from the Claude that built this
 

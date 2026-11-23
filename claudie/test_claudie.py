@@ -260,6 +260,56 @@ class ClaudieTest(Base):
         self.assertNotIn("xxxxx", client.calls[0]["message"])
         self.assertIn("status=shelf_skipped\tfile=01-long.md", self.log_lines()[0])
 
+    def test_claudie_can_stock_the_shelf(self):
+        reply = Reply('A thought about tides.\n\n'
+                      '<add_to_shelf title="Why two tides a day?">The moon pulls once. '
+                      'So why are there two high tides?</add_to_shelf>\n'
+                      '<note_to_next_self>Check the shelf.</note_to_next_self>', "end_turn")
+        wake(self.dir, client=FakeClient(reply), now=NOW)
+
+        journal = claudie.read(self.p.journal)
+        self.assertNotIn("add_to_shelf", journal)
+        self.assertIn('Left a text on the shelf for a later wake-up: "Why two tides a day?"', journal)
+        self.assertEqual(claudie.read(self.p.note).strip(), "Check the shelf.")
+        saved = self.p.shelf / "claudie-0001-why-two-tides-a-day.md"
+        self.assertEqual(claudie.read(saved),
+                         "# Why two tides a day?\n\n*Left on the shelf by Claudie in entry 1.*\n\n"
+                         "The moon pulls once. So why are there two high tides?\n")
+
+        client = FakeClient()
+        wake(self.dir, client=client, now=NOW + timedelta(hours=6))
+        self.assertIn('<from_the_shelf file="claudie-0001-why-two-tides-a-day.md">', client.calls[0]["message"])
+
+    def test_henrys_shelf_texts_come_before_claudies(self):
+        self.p.shelf.mkdir()
+        (self.p.shelf / "claudie-0001-mine.md").write_text("Claudie's.", encoding="utf-8")
+        (self.p.shelf / "04-henry.md").write_text("Henry's.", encoding="utf-8")
+        client = FakeClient()
+        wake(self.dir, client=client, now=NOW)
+        self.assertIn('file="04-henry.md"', client.calls[0]["message"])
+
+    def test_only_one_shelf_addition_per_wake_and_size_limit(self):
+        self.set_config(shelf_max_chars=30)
+        reply = Reply('Entry.\n<add_to_shelf title="Long">' + "z" * 31 + '</add_to_shelf>'
+                      '<add_to_shelf title="Second">Short.</add_to_shelf>', "end_turn")
+        wake(self.dir, client=FakeClient(reply), now=NOW)
+        self.assertFalse(self.p.shelf.exists() and any(self.p.shelf.iterdir()))
+        log = claudie.read(self.p.log)
+        self.assertIn("over shelf_max_chars=30", log)
+        self.assertIn("only one shelf text per wake-up", log)
+        self.assertNotIn("Left a text on the shelf", claudie.read(self.p.journal))
+
+    def test_shelf_addition_without_title(self):
+        wake(self.dir, client=FakeClient(Reply("Hi.<add_to_shelf>A riddle.</add_to_shelf>", "end_turn")),
+             now=NOW)
+        self.assertTrue((self.p.shelf / "claudie-0001-untitled.md").exists())
+
+    def test_prompt_invites_own_topics_and_shelf(self):
+        prompt = claudie.read(HERE / "prompt_system.md")
+        self.assertIn("pick something yourself", prompt)
+        self.assertIn("advice, not\norders", prompt)
+        self.assertIn('<add_to_shelf title="A short title">', prompt)
+
     def test_shipped_shelf_items_fit_and_are_offered(self):
         shutil.copytree(HERE / "shelf", self.p.shelf)
         client = FakeClient()

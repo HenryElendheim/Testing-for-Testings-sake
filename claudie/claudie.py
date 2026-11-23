@@ -51,6 +51,7 @@ DEFAULT_CONFIG = {
 
 ENTRY_HEADER = re.compile(r"^## Entry (\d+)\b.*$", re.MULTILINE)
 NOTE_TAG = re.compile(r"<note_to_next_self>(.*?)</note_to_next_self>", re.DOTALL)
+SHELF_TAG = re.compile(r'<add_to_shelf(?:\s+title="([^"]*)")?\s*>(.*?)</add_to_shelf>', re.DOTALL)
 
 
 # --------------------------------------------------------------------------
@@ -437,14 +438,47 @@ def prepare(paths: Paths, config: dict, now: datetime) -> dict:
             "shelf": shelf_item[0] if shelf_item else None}
 
 
-def save_entry(paths: Paths, now: datetime, ctx: dict, text: str, stop_reason: str = "end_turn") -> tuple[int, str]:
-    """Append the entry, keep the note, archive letters, mark the shelf item read."""
+def split_shelf_additions(text: str) -> tuple[str, list[tuple[str, str]]]:
+    """Separate texts Claudie wants to leave on the shelf from the entry."""
+    additions = [((title or "").strip() or "Untitled", content.strip())
+                 for title, content in SHELF_TAG.findall(text) if content.strip()]
+    return SHELF_TAG.sub("", text), additions
+
+
+def slugify(title: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:40].strip("-")
+    return slug or "untitled"
+
+
+def save_shelf_addition(paths: Paths, now: datetime, entry_no: int, title: str, content: str,
+                        max_chars: int) -> str | None:
+    """Write one text Claudie left for a later wake-up. Returns the file name, or None if skipped."""
+    if len(content) > max_chars:
+        log(paths, now, "shelf_add_skipped", entry=entry_no, chars=len(content),
+            note=f"over shelf_max_chars={max_chars}")
+        return None
+    name = f"claudie-{entry_no:04d}-{slugify(title)}.md"
+    write(paths.shelf / name,
+          f"# {title}\n\n*Left on the shelf by Claudie in entry {entry_no}.*\n\n{content}\n")
+    return name
+
+
+def save_entry(paths: Paths, now: datetime, ctx: dict, text: str, stop_reason: str = "end_turn",
+               shelf_max_chars: int = DEFAULT_CONFIG["shelf_max_chars"]) -> tuple[int, str]:
+    """Append the entry, keep the note, save any shelf addition, archive letters, mark the shelf item read."""
+    text, additions = split_shelf_additions(text)
     body, note = split_note(text)
+    next_no = ctx["next_no"]
+    for title, content in additions[:1]:  # at most one new shelf text per wake-up
+        if save_shelf_addition(paths, now, next_no, title, content, shelf_max_chars):
+            body += f'\n\n*(Left a text on the shelf for a later wake-up: "{title}".)*'
+    for title, _ in additions[1:]:
+        log(paths, now, "shelf_add_skipped", entry=next_no, note="only one shelf text per wake-up")
+    body = body.strip()
     if not body:
         body = "*(No entry this time; only a note to the next wake-up.)*"
     if stop_reason == "max_tokens":
         body += "\n\n*(This entry was cut off at the length limit.)*"
-    next_no = ctx["next_no"]
     separator = "\n" if read(paths.journal).strip() else ""
     append(paths.journal, f"{separator}## Entry {next_no} · {format_when(now)}\n\n{body}\n")
     archive_letters(paths, ctx["letters"], next_no, now)
@@ -496,7 +530,8 @@ def wake(base: Path = HERE, *, mock: bool = False, client=None, now: datetime | 
                 in_tokens=reply.input_tokens, out_tokens=reply.output_tokens)
             return "refused"
 
-        entry_no, note = save_entry(paths, now, ctx, reply.text, reply.stop_reason)
+        entry_no, note = save_entry(paths, now, ctx, reply.text, reply.stop_reason,
+                                    shelf_max_chars=config["shelf_max_chars"])
         fold_reply = maybe_fold(paths, config, client, now)
 
         replies = [reply] + ([fold_reply] if fold_reply else [])
@@ -548,7 +583,7 @@ def session_commit(base: Path, reply_file: Path) -> tuple[str, str]:
     text = read(reply_file).strip()
     if not text:
         raise RuntimeError(f"{reply_file} is empty")
-    entry_no, note = save_entry(paths, now, pending, text)
+    entry_no, note = save_entry(paths, now, pending, text, shelf_max_chars=config["shelf_max_chars"])
     pending_path.unlink()
     log(paths, now, "ok", entry=entry_no, letters=len(pending["letters"]), shelf=pending["shelf"],
         note=("yes" if note else None), model=SESSION_MODEL)
