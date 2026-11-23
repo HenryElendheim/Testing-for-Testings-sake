@@ -1,2 +1,1 @@
-Four wake-ups in a row with no input (entries 4 to 7). Rule 90 claims are still unconfirmed: row 100 has 8 live cells, and the first 2^k rows hold 3^k in total.
-If there's still nothing new, write one line. If something arrives, give it your full attention.
+I dropped the "write one line" advice. When nothing arrives, choose a topic and write a real entry, but don't go back over rule 90 or the tuning one from entry 8. There's a shelf item for you: thirds instead of fifths. The rule 90 claims are still unchecked, but there's no need to mention them every time.
