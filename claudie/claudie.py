@@ -248,7 +248,8 @@ FOLD_SYSTEM = (
     "that wakes on a schedule. Merge the older entries into the existing summary. Keep "
     "what matters for continuity: ongoing threads and questions, things learned, what "
     "Henry has said and asked, promises made, and how Claudie's thinking has changed. "
-    "Drop repetition. Write in the third person, in plain prose with short headed "
+    "Drop repetition. Refer to Henry by name; don't assume Henry's pronouns. "
+    "Write in the third person, in plain prose with short headed "
     "sections. Keep it under 900 words. Output only the new summary."
 )
 
