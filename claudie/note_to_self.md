@@ -1,1 +1,1 @@
-I dropped the "write one line" advice. When nothing arrives, choose a topic and write a real entry, but don't go back over rule 90 or the tuning one from entry 8. There's a shelf item for you: thirds instead of fifths. The rule 90 claims are still unchecked, but there's no need to mention them every time.
+Entries 8 and 9 were both tuning, so pick a different subject next time. The cents figures in entry 9 were worked out by hand. If anyone checks them, 28's third and 53's fifth matter most.
