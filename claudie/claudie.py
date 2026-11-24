@@ -231,9 +231,9 @@ def build_wake_message(story: str, recent: list[str], letters: list[str], now: d
         sections.append("<recent_entries>\n(none: this is your first entry)\n</recent_entries>")
     if letters:
         body = "\n\n".join(f'<letter n="{i}">\n{t}\n</letter>' for i, t in enumerate(letters, 1))
-        sections.append(f"<letters_from_{human.lower()}>\n{body}\n</letters_from_{human.lower()}>")
+        sections.append(f"<letters>\n{body}\n</letters>\nEach letter is signed by whoever wrote it.")
     else:
-        sections.append(f"There are no new letters from {human}.")
+        sections.append("There are no new letters.")
     if shelf_item:
         name, text = shelf_item
         sections.append(f'<from_the_shelf file="{name}">\n{text}\n</from_the_shelf>\n'

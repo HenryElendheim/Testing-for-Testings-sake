@@ -181,7 +181,7 @@ class ClaudieTest(Base):
     def test_no_letters_says_so(self):
         client = FakeClient()
         wake(self.dir, client=client, now=NOW)
-        self.assertIn("There are no new letters from Henry.", client.calls[0]["message"])
+        self.assertIn("There are no new letters.", client.calls[0]["message"])
 
     # --- note to next self, time gap, shelf ---------------------------------
 
