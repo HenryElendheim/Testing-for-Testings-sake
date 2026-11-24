@@ -41,7 +41,8 @@ DEFAULT_CONFIG = {
     "summary_max_tokens": 4000,
     "max_wakes_per_day": 3,
     "recent_entries": 5,
-    "fold_when_unfolded_chars_exceed": 12000,
+    "fold_batch_entries": 5,
+    "fold_when_unfolded_chars_exceed": 30000,
     "keep_unfolded_entries": 5,
     "stale_lock_minutes": 60,
     "shelf_max_chars": 8000,
@@ -217,14 +218,19 @@ def format_when(now: datetime) -> str:
 
 def build_wake_message(story: str, recent: list[str], letters: list[str], now: datetime,
                        next_no: int, human: str, *, gap: str | None = None, note: str = "",
-                       shelf_item: tuple[str, str] | None = None) -> str:
+                       shelf_item: tuple[str, str] | None = None, story_covers: int = 0) -> str:
     first = f"It is {format_when(now)}. This is wake-up number {next_no}."
     if gap:
         first += f" Your last entry was {gap} ago."
     sections = [first]
     if note.strip():
         sections.append("<note_from_your_last_wake>\n" + note.strip() + "\n</note_from_your_last_wake>")
-    sections.append("<story_so_far>\n" + (story.strip() or "(nothing yet)") + "\n</story_so_far>")
+    if story.strip() and story_covers:
+        sections.append(f'<story_so_far covers="entries 1 to {story_covers}">\n' + story.strip()
+                        + "\n</story_so_far>\nThe summary is older than the entries below. "
+                        "Where they differ, the entries below are more current.")
+    else:
+        sections.append("<story_so_far>\n" + (story.strip() or "(nothing yet)") + "\n</story_so_far>")
     if recent:
         sections.append("<recent_entries>\n" + "\n\n".join(recent) + "\n</recent_entries>")
     else:
@@ -249,6 +255,9 @@ FOLD_SYSTEM = (
     "what matters for continuity: ongoing threads and questions, things learned, what "
     "Henry has said and asked, promises made, and how Claudie's thinking has changed. "
     "Drop repetition. Refer to Henry by name; don't assume Henry's pronouns. "
+    "The summary covers only the entries folded into it, and its reader also sees newer "
+    "entries, so describe habits, practices and open items as of the latest folded entry "
+    "(say which entry), never as standing instructions. "
     "Write in the third person, in plain prose with short headed "
     "sections. Keep it under 900 words. Output only the new summary."
 )
@@ -347,14 +356,22 @@ def acquire_lock(paths: Paths, stale_minutes: float) -> bool:
 
 
 def entries_to_fold(paths: Paths, config: dict) -> list[tuple[int, str]]:
-    """Older unsummarised entries, once they get long enough to fold."""
+    """Older unsummarised entries, folded in batches.
+
+    The newest keep_unfolded_entries always stay unfolded. The rest are folded
+    once there are at least fold_batch_entries of them, or sooner if all the
+    unfolded text grows past fold_when_unfolded_chars_exceed.
+    """
     folded_through = int(load_state(paths).get("folded_through", 0))
     unfolded = [(n, t) for n, t in split_entries(read(paths.journal)) if n > folded_through]
     keep = int(config["keep_unfolded_entries"])
-    size = sum(len(t) for _, t in unfolded)
-    if size <= config["fold_when_unfolded_chars_exceed"] or len(unfolded) <= keep:
+    foldable = unfolded[:-keep] if keep else unfolded
+    if not foldable:
         return []
-    return unfolded[:-keep] if keep else unfolded
+    size = sum(len(t) for _, t in unfolded)
+    if len(foldable) >= int(config["fold_batch_entries"]) or size > config["fold_when_unfolded_chars_exceed"]:
+        return foldable
+    return []
 
 
 def save_fold(paths: Paths, now: datetime, through: int, count: int, summary: str, **log_fields) -> None:
@@ -434,7 +451,8 @@ def prepare(paths: Paths, config: dict, now: datetime) -> dict:
 
     message = build_wake_message(read(paths.story), recent, letters, now, next_no,
                                  config.get("human", "Henry"), gap=describe_gap(last_wake, now),
-                                 note=read(paths.note), shelf_item=shelf_item)
+                                 note=read(paths.note), shelf_item=shelf_item,
+                                 story_covers=int(state.get("folded_through", 0)))
     return {"system": system, "message": message, "next_no": next_no, "letters": letters,
             "shelf": shelf_item[0] if shelf_item else None}
 

@@ -348,6 +348,26 @@ class ClaudieTest(Base):
         self.assertNotIn("## Entry 6 ·", msg)
         self.assertIn("## Entry 9 ·", msg)
 
+    def test_folds_wait_for_a_full_batch(self):
+        self.set_config(keep_unfolded_entries=2, fold_batch_entries=3,
+                        fold_when_unfolded_chars_exceed=10**9)
+        cfg = claudie.load_config(self.p)
+        for n in range(1, 5):  # 4 entries: 2 foldable, below the batch of 3
+            claudie.append(self.p.journal, f"## Entry {n} · x\n\nText {n}.\n\n")
+        self.assertEqual(claudie.entries_to_fold(self.p, cfg), [])
+        claudie.append(self.p.journal, "## Entry 5 · x\n\nText 5.\n")
+        self.assertEqual([n for n, _ in claudie.entries_to_fold(self.p, cfg)], [1, 2, 3])
+
+    def test_story_is_labelled_with_what_it_covers(self):
+        self.p.story.write_text("Old summary.\n", encoding="utf-8")
+        self.p.state.write_text('{"folded_through": 7}', encoding="utf-8")
+        client = FakeClient()
+        wake(self.dir, client=client, now=NOW)
+        msg = client.calls[0]["message"]
+        self.assertIn('<story_so_far covers="entries 1 to 7">\nOld summary.', msg)
+        self.assertIn("the entries below are more current", msg)
+        self.assertIn("never as standing instructions", claudie.FOLD_SYSTEM)
+
     def test_no_fold_while_journal_is_short(self):
         client = FakeClient()
         wake(self.dir, client=client, now=NOW)
