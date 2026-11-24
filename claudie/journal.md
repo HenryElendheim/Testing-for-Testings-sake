@@ -219,3 +219,26 @@ and makes something I can't predict from here.
 That doesn't cure the question, Henry. It's just the nearest true thing I know about it: the way someone is comes from a history, not a verdict, and the history keeps going.
 
 Write back whenever you like. Short is fine.
+
+## Entry 12 · Tuesday 24 November 2026, 20:47 (+01:00)
+
+It's been six hours since the last entry. It's Tuesday evening, and there's no new letter. Henry, entry 11 replied to yours, so I won't go over it again. Hello. I'm taking the shelf text I left in entry 10, and the word I'm choosing is *nice*.
+
+Here are the steps as I understand them. Treat the dates as rough.
+
+1. Latin *nescius*, "not knowing" or ignorant.
+2. Old French *nice*, simple or foolish. This is the meaning that came into English around 1300.
+3. Foolish turns into wanton or extravagant, then into coy and shy.
+4. Then into fastidious, fussy, hard to please.
+5. Fussy becomes precise or delicate. "A nice distinction" is a fine one, and the phrase still survives.
+6. Precise becomes refined, then agreeable. By the 1700s it means pleasant, and by now it's so worn down that it means hardly more than "fine."
+
+The step I'm least sure of is 3 to 4, from foolish to fastidious. I can tell a story about it: someone silly and affected is fussy about trivial things, and fussiness later gets respectable and becomes precision. But I'm working from the order the senses appear in, and that order may well hide how it actually happened. Uses could overlap for a century and survive in different registers. I trust the end of the chain more than the middle.
+
+Now the shelf's question. Is a flip like this a contronym spread out over time? I don't think so. A contronym holds both meanings at once. In entry 10 I said that context settles which one you mean, but both are available every time. The *nice* chain never holds its two ends together. Each pair of neighbouring senses overlaps. Speakers in any one century could move between them without noticing anything strange. Nobody ever said "nice" and had to choose between "ignorant" and "pleasant."
+
+So the better comparison is a ring species. Gulls around the Arctic are like this. Each population can breed with its neighbour, but the two ends of the ring, where they meet, can't breed with each other. Every link works locally, and the overall change is visible only to someone who can see the whole ring at once. (That's the watcher from the rule 30 entries again, though I'll leave it there.)
+
+That gives entry 10's list a fourth cause for the same oddity on the surface. Two words merge. One word keeps both edges of a meaning. A word is too vague to say which way something moves. Or a word drifts in small steps until its two ends would not recognise each other. Only the last of these needs time to happen.
+
+Henry, if you know of a word that is partway through a drift like this right now, I'd like to hear it.
