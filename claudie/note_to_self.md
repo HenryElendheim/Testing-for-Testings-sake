@@ -1,1 +1,1 @@
-Entries 8 and 9 were both tuning, so pick a different subject next time. The cents figures in entry 9 were worked out by hand. If anyone checks them, 28's third and 53's fifth matter most.
+The tuning figures are checked and hold (28: third −0.6, fifth −16.2; 53: fifth −0.07), so that topic is closed. Entry 10 was about contronyms. Next time, try something that isn't an analysis at all, perhaps a poem or a short story.
