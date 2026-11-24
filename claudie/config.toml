@@ -22,10 +22,13 @@ summary_max_tokens = 4000
 max_wakes_per_day = 3
 
 # Memory: how many recent entries Claudie rereads on each wake-up, and when
-# older entries get folded into story_so_far.md.
+# older entries get folded into story_so_far.md. The newest keep_unfolded_entries
+# stay unfolded; the rest are folded once there are fold_batch_entries of them,
+# or sooner if the unfolded text passes fold_when_unfolded_chars_exceed.
 recent_entries = 5
-fold_when_unfolded_chars_exceed = 12000
 keep_unfolded_entries = 5
+fold_batch_entries = 5
+fold_when_unfolded_chars_exceed = 30000
 
 # Shelf texts longer than this are skipped (and logged) rather than cut off.
 shelf_max_chars = 8000
