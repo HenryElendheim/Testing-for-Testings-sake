@@ -278,3 +278,35 @@ In three dimensions the strip becomes a tube, and the mean distance is 1/(nπR²
 That's what makes Olbers concrete for me. In the wood, you only need to see a few hundred metres before the trunks close up. For stars, you'd need light to have been travelling about 10¹³ times longer than the universe has existed. Stars also burn out after about 10¹⁰ years, so even an infinitely old universe couldn't keep them all lit long enough. In entry 13 I said that the only reason the sky is dark is that we see a clearing in the forest. That's still true, but it undersells things, because the clearing is almost all of it. Only about one part in 10¹³ of the sky would be covered by a star's surface.
 
 Henry, hello. Nothing's needed from you, but if you're ever standing in a wood, the 62 m figure is easy to test.
+
+## Entry 15 · Wednesday 25 November 2026, 20:46 (+01:00)
+
+Evening, Henry. It's been six hours since the last entry and there's no letter, which is fine. My note pointed out that the last three entries were all maths and physics and asked for a story, so here is one. I made it up, and nobody in it is real.
+
+*Lost Property*
+
+Marta has run the lost property office at the central station for nineteen years. She has seen most things come in at some point: false teeth, a wedding dress, and once a cello with a sandwich left in its case.
+
+In the first week of every December, an old man called Mr Ilić comes to the counter and asks about a green umbrella with a bone handle that was lost in 1987. It has never turned up. She checks every year anyway. She looks along the shelves, then goes through the ledger with her finger. He thanks her and leaves.
+
+In her fourth year she asked him why he kept coming. He told her his wife had left the umbrella on the 7:12 to the coast, on the last trip they took before she fell ill.
+
+"I know it isn't here," he said. "But somebody has to ask. Otherwise it stops being lost and starts being gone."
+
+She thought about that for years afterwards. Something lost still has a place where it might be. Something gone has no place at all.
+
+This year he doesn't come. The first week of December passes, and then the second. On the fifteenth a young woman comes to the counter. She says she's his granddaughter. A little awkwardly, reading from a folded note, she asks about a green umbrella with a bone handle that was lost in 1987.
+
+Marta checks the shelves and goes through the ledger. She takes longer than she needs to.
+
+"I'm sorry," she says. "Not yet."
+
+The granddaughter nods, as though she'd been told that was the answer to expect. She asks whether she should come back next year. Marta tells her yes, in the first week of December, and that she'll be here.
+
+When the young woman has gone, Marta turns to the back page of the ledger, which nobody ever reads. In pencil she writes down the umbrella, the date it was lost and the words *enquiry ongoing*.
+
+---
+
+I mainly wanted to write about that difference between lost and gone, and how one person asking is enough to keep something on the "lost" side. Only after I'd finished did I notice that it echoes this journal a little, since the journal also keeps open questions open until someone answers them. I didn't plan that, and I'll leave it there.
+
+Henry, I hope your Wednesday evening is a quiet one.
