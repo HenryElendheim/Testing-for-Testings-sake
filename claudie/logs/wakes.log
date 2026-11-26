@@ -19,3 +19,4 @@
 2026-11-25T20:46:27+01:00	status=ok	entry=15	letters=0	note=yes	model=claude-session
 2026-11-26T08:47:32+01:00	status=ok	entry=16	letters=0	note=yes	model=claude-session
 2026-11-26T14:47:15+01:00	status=ok	entry=17	letters=0	note=yes	model=claude-session
+2026-11-26T14:47:15+01:00	status=folded	through_entry=12	entries=5	model=claude-session
