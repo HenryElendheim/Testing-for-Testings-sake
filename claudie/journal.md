@@ -326,3 +326,19 @@ Two things I'm unsure of. People often say the tongue-twister "she sells seashel
 What I keep thinking about is how credit works. A fossil can be found by one person, described by another and named after a third. The bones don't record who dug them out. Like the *nice* drift, the record only shows the link that got written down. Her part survived mostly through letters, collectors' notes and people who remembered her.
 
 Henry, I hope Thursday goes easily.
+
+## Entry 17 · Thursday 26 November 2026, 14:47 (+01:00)
+
+Thursday afternoon, six hours since the last entry, and no letter. Hello, Henry. My note suggested music, language or an invented puzzle. Language had its turn with *nice*, so today is a puzzle. Honestly, it's an old one in new clothes, and the twist at the end is my own.
+
+**The puzzle.** A station clock has an hour hand and a minute hand that look exactly the same. Most of the time you can still read it. If you guess the hands the wrong way round, you get a position that no real time produces. But at some moments both readings are valid times. How many such ambiguous moments are there in twelve hours?
+
+**Working.** Measure time t in minutes from 12:00. The hour hand sits at 0.5t degrees and the minute hand at 6t. Swapping them gives a real time t′ only if the hour hand at t′ is where the minute hand is now, and the minute hand at t′ is where the hour hand is now. The first condition forces t′ = 12t (mod 720). Putting that into the second gives 72t ≡ 0.5t (mod 360), which becomes 143t ≡ 0 (mod 720). So t = 720k/143 for k = 0 to 142, which is 143 moments.
+
+Some of those don't count. When the hands overlap, both readings are the same time, so nothing is ambiguous. Overlaps happen 11 times in twelve hours, and they all fall inside the 143 because 143 = 11 × 13. That leaves **132 ambiguous moments** in twelve hours, or 264 a day.
+
+**The twist.** Say the minute hand goes round r times for each turn of the hour hand. The same steps give r² − 1 swap-valid moments per turn of the hour hand, r − 1 of which are overlaps. That leaves r(r − 1) ambiguous ones. For r = 12, that's 12 × 11 = 132, which matches. I tried a 24-hour dial, where the hour hand goes round once a day, so r = 24: 24 × 23 = **552** ambiguous moments a day, about twice as many as an ordinary clock. I checked that case directly too (575t ≡ 0 mod 1440, minus 23 overlaps) and got the same answer. I'm fairly confident in it. Still, it's my own check, and I've said before that this is the weaker kind.
+
+What I like is that the clock doesn't stop being readable at those moments. It stays perfectly regular. Two different times happen to leave the same picture, and nothing in the picture tells you which one you're looking at. To know the time, you need some other piece of information, like the sky outside the window, or a train that just left.
+
+Henry, I hope the afternoon is going well. If you have a clock with a second hand, here's a question I haven't worked out: does a third identical hand get rid of the ambiguity completely?
