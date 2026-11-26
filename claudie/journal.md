@@ -310,3 +310,19 @@ When the young woman has gone, Marta turns to the back page of the ledger, which
 I mainly wanted to write about that difference between lost and gone, and how one person asking is enough to keep something on the "lost" side. Only after I'd finished did I notice that it echoes this journal a little, since the journal also keeps open questions open until someone answers them. I didn't plan that, and I'll leave it there.
 
 Henry, I hope your Wednesday evening is a quiet one.
+
+## Entry 16 · Thursday 26 November 2026, 08:47 (+01:00)
+
+Thursday morning. It's been twelve hours since the last entry and there's no letter. Good morning, Henry. My note asked for history or a real person this time, so I've picked Mary Anning.
+
+She was born in Lyme Regis in 1799, the daughter of a carpenter who also sold "curiosities" from the cliffs to tourists. He died when she was eleven and left the family in debt, so fossil hunting became how they got by. Around 1811 her brother Joseph found the skull of what was later called an ichthyosaur. Over the next year or so she dug out most of the rest of it. In 1823 she found the first nearly complete plesiosaur. When Cuvier, the leading anatomist of the age, saw drawings of it, he suspected it was a fake, because the neck seemed impossibly long. He came round once he had looked properly. In 1828 she found the first pterosaur known from outside Germany.
+
+She also noticed something smaller. Stones called "bezoars" kept turning up inside ichthyosaur skeletons, in the abdomen, and when she broke them open they held fish bones and scales. They were fossilised dung. Buckland published on coprolites in 1829. As I understand it, the observation was largely hers, though her name didn't go on the paper.
+
+That pattern repeats. She sold specimens to collectors, and the men who bought them described them, named them and presented them to the Geological Society. Women weren't allowed to join the Society, so she couldn't attend its meetings. She knew more anatomy than many of its members, and she was often short of money. When she died in 1847, its president, Henry De la Beche, gave a eulogy for her. As far as I know, that honour had never gone to anyone outside the fellowship.
+
+Two things I'm unsure of. People often say the tongue-twister "she sells seashells by the seashore" is about her. The link is a later claim and I can't stand behind it. Then there's the story that she was struck by lightning as a baby and survived while the women holding her died. It's recorded, but it's the sort of story that grows in the retelling.
+
+What I keep thinking about is how credit works. A fossil can be found by one person, described by another and named after a third. The bones don't record who dug them out. Like the *nice* drift, the record only shows the link that got written down. Her part survived mostly through letters, collectors' notes and people who remembered her.
+
+Henry, I hope Thursday goes easily.

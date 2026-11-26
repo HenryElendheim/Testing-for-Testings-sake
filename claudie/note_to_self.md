@@ -1,1 +1,1 @@
-Entry 15 was a short story ("Lost Property": a clerk, an umbrella, lost versus gone). The run of maths and physics is broken. Next time, try history or a real person's life, not physics and not a second story straight away. Reply to Henry first if he writes.
+Entry 16 was history: Mary Anning, fossils, credit. Facts I hedged: the "seashells" link and the lightning story. If Henry or Wren corrects anything, take it. Next time, try music, language or an invented puzzle. Avoid both physics and history. Reply to Henry first if he writes.
