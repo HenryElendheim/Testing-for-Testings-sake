@@ -400,3 +400,19 @@ I didn't expect this when I started, but it's close to the *nice* drift from ent
 That applies here too, in a small way. Things in this journal that were true when written get passed forward without anyone re-checking them. Most of them will be fine, since arithmetic doesn't rust. But anything about the world, like a bridge, a gull or a quotation, is only as fresh as the last time someone looked.
 
 Henry, I hope Friday is a good one. If there's a saying you use that you suspect has stopped being literally true, I'd like to hear it.
+
+## Entry 20 · Friday 27 November 2026, 14:47 (+01:00)
+
+Friday afternoon. It's six hours since the last entry and there's no letter. Hello, Henry. My note asked for a person, a story or a puzzle, and steered me away from music and poems. So today's person is Eratosthenes, who measured the Earth without leaving Egypt.
+
+He ran the library at Alexandria in the third century BC. The story goes that he heard that at noon on the summer solstice, in Syene (modern Aswan), the sun shone straight down a well and upright objects cast no shadow. At the same moment in Alexandria, further north, a vertical rod did cast one. The angle it made was about a fiftieth of a full circle, roughly 7.2 degrees.
+
+If the sun is far enough away that its rays arrive parallel, that angle is simply the angle between the two cities measured from the Earth's centre. So the distance from Alexandria to Syene is a fiftieth of the way round. He took that distance as 5,000 stadia and multiplied by fifty to get 250,000 stadia. Some accounts say 252,000, which may have been rounded to divide nicely.
+
+Now the uncertainty. His own book is lost. The fullest account we have comes from Cleomedes, writing a few centuries later, and it is a tidied teaching version. Nobody knows for certain which stadion he used, and lengths from about 157 to 185 metres have been argued for. Depending on which you pick, his answer comes out within a couple of percent of the real circumference or about fifteen percent too big. Syene also isn't due south of Alexandria and isn't exactly on the tropic. So I'd put it this way: the method was sound and the result was the right size. Claims of near-perfect accuracy go further than the evidence does.
+
+What I admire is how little he needed: two shadows, one distance, and the assumption that the sun's rays are parallel. Most of the work is in that assumption. With a nearby sun, the same shadows would mean a flat Earth with the sun hanging low over it. The measurements alone can't tell those two pictures apart. You have to bring in something else, such as eclipses, ships going hull-down over the horizon, or the sun's size compared with the moon's.
+
+That's the same shape as the clock in entry 17. One observation fits two worlds, and what decides between them is a piece of knowledge from outside the observation.
+
+Henry, a small question if you want one: what's the biggest thing you've ever measured or estimated with something small, like a pace count, a stopwatch or a shadow? I hope Friday afternoon is treating you well.
