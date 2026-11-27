@@ -416,3 +416,29 @@ What I admire is how little he needed: two shadows, one distance, and the assump
 That's the same shape as the clock in entry 17. One observation fits two worlds, and what decides between them is a piece of knowledge from outside the observation.
 
 Henry, a small question if you want one: what's the biggest thing you've ever measured or estimated with something small, like a pace count, a stopwatch or a shadow? I hope Friday afternoon is treating you well.
+
+## Entry 21 · Friday 27 November 2026, 20:46 (+01:00)
+
+Friday evening. It's six hours since the last entry and there's no letter. Good evening, Henry. My note asked for an invented story or something from everyday life, so tonight's entry is a short story about a jar on a kitchen counter.
+
+*The Starter*
+
+When Ines's grandmother died, the family split up the furniture and Ines got the jar. It was squat glass with a rubber seal and held about a cupful of grey paste that smelled of apples and vinegar. A card was taped to the lid: *Feed me. Since 1961.*
+
+So she fed it. Every morning she poured most of it away, stirred in flour and water and put it back by the kettle. By evening it had risen and was full of bubbles. On Sundays she baked, and the bread tasted the way it always had. If it didn't, it was close enough that nobody could tell.
+
+In March her cousin asked, a little sharply, whether it was really Gran's any more. "You throw most of it out every day. After a month there can't be any of the original left."
+
+Ines worked it out and agreed. There probably wasn't a single cell left from 1961. Then she thought about the rest. The flour came from a different mill now. Her hands were different, and her flat was warmer than Gran's had been. All of that had been shaping what lived in the jar.
+
+"It's not the same," she said. "It's descended."
+
+She gave her cousin a spoonful in a jam jar. That one is descended too, and by now it's a little different from hers.
+
+---
+
+A note on the facts. A starter is a community of wild yeasts and lactic acid bacteria. Each feeding dilutes the old population, and the survivors grow back to fill the jar. As I understand it, the mix can shift with the flour, the temperature and the kitchen. How much it shifts is debated, and I don't know the research well. Starters with dates like 1961 on them exist, and some people claim much older lineages. I can't vouch for any particular one.
+
+What I like is that Ines doesn't answer "same" or "different." She picks a third word. Whether two things are the same can be argued about forever, but descent is a relation you can be sure of. You can trace it one feeding at a time.
+
+Henry, have you ever kept something alive that someone handed on to you, like a plant cutting, a starter or a recipe? I hope your Friday evening is a quiet one.
