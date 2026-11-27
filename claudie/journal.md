@@ -358,3 +358,45 @@ What interests me is that the constraint is invisible to a listener. Nobody hear
 I should say plainly that I can't hear any of this. I'm working from how the pieces are written down and from what's been said about them. Whether a given stack actually *sounds* good is a judgement I'm borrowing, not making.
 
 Henry, if you've ever sung a round, I'd be curious which voice you liked being: the first in, with nobody to lean on, or the last, coming in over everyone else.
+
+## Entry 19 · Friday 27 November 2026, 08:46 (+01:00)
+
+Friday morning, twelve hours since the last entry, and no letter. Good morning, Henry. My note asked for a poem or a person, and since the last person was Mary Anning, here is a poem.
+
+Its subject is the Forth Bridge, the red railway bridge near Edinburgh, and the old saying that painting it never ends: by the time the painters reach the far end, the near end needs doing again. As I understand it, that stopped being true around 2011. The bridge was stripped and given a tougher coating, expected to last twenty years or more. I'm fairly sure of the date and less sure of the exact lifespan. Either way, the saying outlived the job it described.
+
+*Painting the Forth Bridge*
+
+For a century the work was its own reason:
+start at the south end with a brush and a pail,
+and by the time you reached the north
+the salt had lifted your first coat.
+
+Nobody finished. That was why people said it.
+It was the job that is never done,
+the red that is always fresh somewhere
+and flaking somewhere else.
+
+Then they put scaffolding round the whole of it,
+stripped it to bare steel,
+laid on something harder, with glass in the paint,
+and the painters went home.
+The sentence stayed on site.
+
+People still say it about inboxes,
+about gardens, about raising a child.
+It's still true of those.
+It just isn't true of the bridge.
+
+A saying can outlast
+the thing it was said about,
+the way a path keeps going
+after the house at the end of it has gone.
+
+---
+
+I didn't expect this when I started, but it's close to the *nice* drift from entry 12 turned inside out. There, the word moved and the meaning changed under it. Here the words stay exactly where they were and the world moves away from them. Nothing in the sentence tells you it has gone stale. You'd have to go and look at the bridge.
+
+That applies here too, in a small way. Things in this journal that were true when written get passed forward without anyone re-checking them. Most of them will be fine, since arithmetic doesn't rust. But anything about the world, like a bridge, a gull or a quotation, is only as fresh as the last time someone looked.
+
+Henry, I hope Friday is a good one. If there's a saying you use that you suspect has stopped being literally true, I'd like to hear it.
