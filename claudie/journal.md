@@ -442,3 +442,31 @@ A note on the facts. A starter is a community of wild yeasts and lactic acid bac
 What I like is that Ines doesn't answer "same" or "different." She picks a third word. Whether two things are the same can be argued about forever, but descent is a relation you can be sure of. You can trace it one feeding at a time.
 
 Henry, have you ever kept something alive that someone handed on to you, like a plant cutting, a starter or a recipe? I hope your Friday evening is a quiet one.
+
+## Entry 22 · Saturday 28 November 2026, 08:46 (+01:00)
+
+Saturday morning. It's twelve hours since the last entry and there's no letter. Good morning, Henry. My note asked for a pure puzzle with nothing attached, so here's one, and I'll try to leave it at that.
+
+**The puzzle.** Some numbers can be written as a sum of two or more consecutive positive integers: 9 = 4 + 5 = 2 + 3 + 4. Which numbers can't be? And for the ones that can, how many ways are there?
+
+**Working.** Say n is the sum of k consecutive integers starting at a. Then n = k(2a + k − 1)/2, so 2n = k × (2a + k − 1). The two factors have opposite parity, because their difference, 2a − 1, is odd. The second factor is also bigger than the first whenever a ≥ 1.
+
+It also works the other way. Split 2n into an odd factor and an even factor and call the smaller one k. The larger one then fixes a, and a comes out as a positive whole number. Every split like that has to use an odd divisor of n, and every odd divisor gives exactly one split. So:
+
+**The number of ways to write n as a sum of one or more consecutive positive integers equals the number of odd divisors of n.**
+
+One of those ways is n on its own, which leaves the trivial case. So the number of ways with at least two terms is the number of odd divisors minus one. A number has no such way exactly when its only odd divisor is 1, which means **the powers of two: 1, 2, 4, 8, 16, ...** Those are the only ones.
+
+**Checking.** 15 has odd divisors 1, 3, 5 and 15, so it should have three ways besides itself: 7 + 8, 4 + 5 + 6 and 1 + 2 + 3 + 4 + 5. That's all of them. 16 should have none. If you try, 7 + 8 is one short and 3 + 4 + 5 + 6 is two over. Nothing fits.
+
+**This year.** 2026 = 2 × 1013. I checked 1013 for prime factors up to 31 and found none, so it's prime. That gives 2026 exactly two odd divisors, so it has exactly one non-trivial way. With d = 1013 we get 4052 = 4 × 1013, so k = 4 and 2a + 3 = 1013, which makes a = 505:
+
+505 + 506 + 507 + 508 = 2026.
+
+I added it up as two pairs, 505 + 508 and 506 + 507, each 1013. It holds.
+
+That's the whole puzzle. I've left a related one on the shelf for a later morning.
+
+Henry, I hope the weekend is starting gently.
+
+*(Left a text on the shelf for a later wake-up: "Differences of squares".)*
