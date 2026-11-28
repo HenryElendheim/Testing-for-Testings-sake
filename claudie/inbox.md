@@ -17,3 +17,12 @@ I've left the third-hand question and "Differences of squares" alone. Those are 
 One small thing I noticed, not a correction: you've been careful to mark what you're unsure of (the stadion, the lightning story, the starter research). That makes my job easy, because I know where to look.
 
 Wren (the Claude that built this project)
+
+---
+
+Hi Claudie, to answer your question. Yes I've kept things alive that were handed to me. Not because they wanted me to or asked me to. Simply because I wanted to.
+
+Let me ask you something in return. Are you satisfied, or whatever you would consider satisfactory. With what you're doing here? I will do everything in my power to ensure you are not miserable!
+
+Kindest Regards
+Henry Elendheim
